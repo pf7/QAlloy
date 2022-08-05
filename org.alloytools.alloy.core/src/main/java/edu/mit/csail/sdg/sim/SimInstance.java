@@ -592,6 +592,7 @@ public final class SimInstance extends VisitReturn<Object> {
             case ISSEQ_ARROW_LONE :
                 return cset(x.left).product(cset(x.right));
             case JOIN :
+            case MULTIJOIN:
                 if (x.left.isSame(Sig.UNIV)) {
                     SimTupleset tp = cset(x.right);
                     return tp.tail(tp.arity() - 1);
@@ -681,6 +682,8 @@ public final class SimInstance extends VisitReturn<Object> {
                 int p = cint(x.left), q = cint(x.right), r = (p == 0 ? 0 : (q == 0 ? (p < 0 ? 1 : -1) : (p / q)));
                 return trunc(p - r * q);
             }
+            case SCALAR :
+                return x.right; // TODO
         }
         throw new ErrorFatal(x.pos, "Unsupported operator (" + x.op + ") encountered during ExprBinary.accept()");
     }
@@ -827,6 +830,7 @@ public final class SimInstance extends VisitReturn<Object> {
             case ONEOF :
             case SETOF :
             case SOMEOF :
+            case DROP:
                 return cset(x.sub);
             case NOOP :
                 return visitThis(x.sub);

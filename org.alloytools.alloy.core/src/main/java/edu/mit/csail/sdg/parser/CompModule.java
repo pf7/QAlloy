@@ -409,7 +409,7 @@ public final class CompModule extends Browsable implements Module {
             return true;
         }
 
-        private Expr process(Pos pos, Pos closingBracket, Pos rightPos, List<Expr> choices, List<String> oldReasons, Expr arg) {
+        private Expr process(Pos pos, Pos closingBracket, Pos rightPos, List<Expr> choices, List<String> oldReasons, Expr arg, ExprBinary.Op op) {
             TempList<Expr> list = new TempList<Expr>(choices.size());
             TempList<String> reasons = new TempList<String>(choices.size());
             for (int i = 0; i < choices.size(); i++) {
@@ -431,10 +431,10 @@ public final class CompModule extends Browsable implements Module {
                         else
                             y = ExprBadCall.make(bc.pos, bc.closingBracket, bc.fun, newargs, bc.extraWeight);
                     } else {
-                        y = ExprBinary.Op.JOIN.make(pos, closingBracket, arg, y);
+                        y = op.make(pos, closingBracket, arg, y);
                     }
                 } else {
-                    y = ExprBinary.Op.JOIN.make(pos, closingBracket, arg, x);
+                    y = op.make(pos, closingBracket, arg, x);
                 }
                 list.add(y);
                 reasons.add(oldReasons.get(i));
@@ -474,8 +474,8 @@ public final class CompModule extends Browsable implements Module {
             // otherwise, process as regular join or as method call
             left = left.typecheck_as_set();
             if (!left.errors.isEmpty() || !(right instanceof ExprChoice))
-                return ExprBinary.Op.JOIN.make(x.pos, x.closingBracket, left, right);
-            return process(x.pos, x.closingBracket, right.pos, ((ExprChoice) right).choices, ((ExprChoice) right).reasons, left);
+                return x.op.make(x.pos, x.closingBracket, left, right);
+            return process(x.pos, x.closingBracket, right.pos, ((ExprChoice) right).choices, ((ExprChoice) right).reasons, left, x.op);
         }
 
         /** {@inheritDoc} */
@@ -483,7 +483,7 @@ public final class CompModule extends Browsable implements Module {
         public Expr visit(ExprBinary x) throws Err {
             Expr left = visitThis(x.left);
             Expr right = visitThis(x.right);
-            if (x.op == ExprBinary.Op.JOIN) {
+            if (x.op == ExprBinary.Op.JOIN || x.op == ExprBinary.Op.MULTIJOIN) {
                 // If it's a macro invocation, instantiate it
                 if (right instanceof Macro)
                     return ((Macro) right).addArg(left).instantiate(this, warns);
@@ -494,7 +494,7 @@ public final class CompModule extends Browsable implements Module {
                 left = left.typecheck_as_set();
                 if (!left.errors.isEmpty() || !(right instanceof ExprChoice))
                     return x.op.make(x.pos, x.closingBracket, left, right);
-                return process(x.pos, x.closingBracket, right.pos, ((ExprChoice) right).choices, ((ExprChoice) right).reasons, left);
+                return process(x.pos, x.closingBracket, right.pos, ((ExprChoice) right).choices, ((ExprChoice) right).reasons, left, x.op);
             }
             return x.op.make(x.pos, x.closingBracket, left, right);
         }
@@ -588,14 +588,14 @@ public final class CompModule extends Browsable implements Module {
                 TempList<ExprVar> n = new TempList<ExprVar>(d.names.size());
                 for (ExprHasName v : d.names)
                     n.add(ExprVar.make(v.pos, v.label, exp.type()));
-                Decl dd = new Decl(d.isPrivate, d.disjoint, d.disjoint2, n.makeConst(), exp);
+                Decl dd = new Decl(d.isPrivate, d.disjoint, d.disjoint2, d.isInt, n.makeConst(), exp);
                 for (ExprHasName newname : dd.names)
                     put(newname.label, newname);
                 decls.add(dd);
             }
             Expr sub = visitThis(x.sub);
             if (x.op == ExprQt.Op.SUM)
-                sub = sub.resolve_as_int(warns);
+                sub = sub.resolve_as_set(warns); // Quantitative extension: SUM now handles expressions
             else
                 sub = sub.resolve_as_formula(warns);
             for (Decl d : decls.makeConst())
@@ -1566,7 +1566,7 @@ public final class CompModule extends Browsable implements Module {
         else
             decls = new ArrayList<Decl>(decls);
         if (f != null)
-            decls.add(0, new Decl(null, null, null, Util.asList(ExprVar.make(f.span(), "this")), f));
+            decls.add(0, new Decl(null, null, null, null, Util.asList(ExprVar.make(f.span(), "this")), f));
         for (Decl d : decls) {
             if (d.isPrivate != null) {
                 ExprHasName name = d.names.get(0);
@@ -1618,7 +1618,7 @@ public final class CompModule extends Browsable implements Module {
                         tmpvars.add(v);
                         rep.typecheck((f.isPred ? "pred " : "fun ") + fullname + ", Param " + n.label + ": " + v.type() + "\n");
                     }
-                    tmpdecls.add(new Decl(d.isPrivate, d.disjoint, d.disjoint2, tmpvars.makeConst(), val));
+                    tmpdecls.add(new Decl(d.isPrivate, d.disjoint, d.disjoint2, d.isInt, tmpvars.makeConst(), val));
                 }
                 Expr ret = null;
                 if (!f.isPred) {
@@ -1990,7 +1990,7 @@ public final class CompModule extends Browsable implements Module {
             String[] names = new String[d.names.size()];
             for (int i = 0; i < names.length; i++)
                 names[i] = d.names.get(i).label;
-            Field[] fields = s.addTrickyField(d.span(), d.isPrivate, d.disjoint, d.disjoint2, null, names, bound);
+            Field[] fields = s.addTrickyField(d.span(), d.isPrivate, d.disjoint, d.disjoint2, null, d.isInt, names, bound);
             for (Field f : fields) {
                 rep.typecheck("Sig " + s + ", Field " + f.label + ": " + f.type() + "\n");
             }

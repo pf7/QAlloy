@@ -147,7 +147,7 @@ public final class IntConstraints {
         final long mask = -1L >>> 32;
         for (int i = 0; i < 1000; i++) {
             long min = (low + 10 * i) & mask, max = (min + 10) & mask;
-            long result = eval.evaluate(var[i].sum()) & mask;
+            long result = (int)eval.evaluate(var[i].sum()) & mask;
             System.out.println(min + " <= [var_" + (i + 1) + "=" + result + "] <= " + max);
         }
     }

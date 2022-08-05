@@ -302,6 +302,16 @@ public final class A4Options implements Serializable {
         x.recordKodkod = recordKodkod;
         x.noOverflow = noOverflow;
         x.coreGranularity = coreGranularity;
+        x.analysisType = analysisType;
+        x.quantitativeSolver = quantitativeSolver;
         return x;
     }
+
+    /**
+     * Quantitative Alloy Options
+     */
+    // Analysis setting: Boolean (Qualitative) or Integer (Quantitative)
+    public String analysisType = "Boolean";
+    // Solver selected to perform the quantitative solving: CVC4, Z3, ... ('None' if analysisType = 'Boolean')
+    public String quantitativeSolver =  "None";
 }

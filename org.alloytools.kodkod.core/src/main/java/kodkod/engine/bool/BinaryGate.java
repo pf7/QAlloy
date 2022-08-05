@@ -31,7 +31,7 @@ import java.util.Set;
  * @invariant #this.inputs = 2
  * @invariant digest = sum(inputs.digest(this.op))
  */
-final class BinaryGate extends MultiGate {
+public final class BinaryGate extends MultiGate {
 
     private final BooleanFormula low, high;
 
@@ -41,7 +41,7 @@ final class BinaryGate extends MultiGate {
      * @requires components.h = components.l && l.label < h.label
      * @ensures this.op' = op && this.inputs' = l + h && this.label' = label
      */
-    BinaryGate(Operator.Nary op, int label, int hashcode, BooleanFormula l, BooleanFormula h) {
+    public BinaryGate(Operator.Nary op, int label, int hashcode, BooleanFormula l, BooleanFormula h) {
         super(op, label, hashcode);
         assert l.label() < h.label();
         this.low = l;

@@ -24,6 +24,9 @@ package kodkod.ast.operator;
 /**
  * Enumerates unary (~, ^, *), binary (+, &, ++, ->, -, .) and nary (+, &, ++,
  * ->) expression operators.
+ * --
+ * The quantitative extension includes the unary DROP, binary |+|, <&, &>, <:, :>, ⊙, ⊘, ▿
+ * and nary |+|, <&, &>, ⊙, ⊘
  *
  * @specfield op: (int->lone Expression) -> Expression
  * @invariant all args: seq Expression, out: Expression | args->out in op =>
@@ -78,6 +81,14 @@ public enum ExprOperator {
                                   return ".";
                               }
                           },
+                          /** Multijoin (;) operator. */
+                          MULTIJOIN {
+
+                              @Override
+                              public String toString() {
+                                  return ";";
+                              }
+                          },
                           /** Transpose (~) operator. */
                           TRANSPOSE {
 
@@ -111,13 +122,102 @@ public enum ExprOperator {
                               public String toString() {
                                   return "PRE";
                               }
-                          };
+                          },
+                          /** Relation representation in the boolean context. **/
+                          DROP {
+                              @Override
+                              public String toString() {
+                                  return "DROP ";
+                              }
+                          },
+                          /** Addition operator. */
+                          ADDITION {
 
-    static final int unary  = TRANSPOSE.index() | CLOSURE.index() | REFLEXIVE_CLOSURE.index() | PRE.index();
+                              @Override
+                              public String toString() {
+            return "|+|";
+        }
+                          },
+                          /** Minus operator. */
+                          MINUS {
+
+                              @Override
+                              public String toString() {
+                                return "|-|";
+                            }
+                          },
+                          /** Scalar multiplication. **/
+                          SCALAR {
+
+                              @Override
+                              public String toString() {
+                                return "**";
+                            }
+                          },
+                          /** Maximum intersection with respect to the leftmost relation. **/
+                          LEFT_INTERSECTION {
+
+                                @Override
+                                public String toString() {
+                                    return "<&";
+                                }
+                          },
+                          /** Maximum intersection with respect to the rightmost relation. **/
+                          RIGHT_INTERSECTION {
+
+                              @Override
+                              public String toString() {
+                                  return "&>";
+                              }
+                          },
+                         /** Domain. **/
+                         DOMAIN {
+
+                             @Override
+                             public String toString() {
+                                 return "<:";
+                             }
+                         },
+                         /** Range. **/
+                         RANGE {
+
+                             @Override
+                             public String toString() {
+                                return ":>";
+                            }
+                         },
+                         /** Hadamard product. **/
+                         HADAMARD_PRODUCT {
+
+                             @Override
+                             public String toString() {
+                                 return "⊙";
+                             }
+                         },
+                         /** Hadamard division. **/
+                         HADAMARD_DIVISION {
+
+                             @Override
+                             public String toString() {
+                                 return "⊘";
+                             }
+                         },
+                         /** Khatri-Rao product. **/
+                         KHATRI_RAO {
+
+                             @Override
+                             public String toString() {
+                                 return "▿";
+                             }
+                         };
+
+    static final int unary  = TRANSPOSE.index() | CLOSURE.index() | REFLEXIVE_CLOSURE.index() | PRE.index() | DROP.index();
 
     static final int binary = ~unary;
 
-    static final int nary   = UNION.index() | INTERSECTION.index() | OVERRIDE.index() | PRODUCT.index();
+    static final int nary   = UNION.index() | INTERSECTION.index() | OVERRIDE.index() | PRODUCT.index() |
+                              LEFT_INTERSECTION.index() | RIGHT_INTERSECTION.index() | ADDITION.index() |
+                              HADAMARD_PRODUCT.index() | HADAMARD_DIVISION.index();
 
     private final int index() {
         return 1 << ordinal();

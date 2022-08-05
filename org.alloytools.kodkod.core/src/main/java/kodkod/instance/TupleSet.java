@@ -43,11 +43,11 @@ import kodkod.util.ints.Ints;
  * @invariant tuples.arity = arity && tuples.universe = universe
  * @author Emina Torlak
  */
-public final class TupleSet extends AbstractSet<Tuple> implements Cloneable {
+public class TupleSet extends AbstractSet<Tuple> implements Cloneable {
 
     private final Universe universe;
     private final int      arity;
-    private final IntSet   tuples;
+    private IntSet         tuples;
     private IntSet         indexView = null;
 
     /**
@@ -121,7 +121,7 @@ public final class TupleSet extends AbstractSet<Tuple> implements Cloneable {
      *
      * @ensures constructs a deep copy of the given tupleset
      */
-    private TupleSet(TupleSet original) {
+    protected TupleSet(TupleSet original) {
         this.universe = original.universe;
         this.arity = original.arity;
         try {
@@ -366,7 +366,7 @@ public final class TupleSet extends AbstractSet<Tuple> implements Cloneable {
      * @throws NullPointerException s = null
      * @throws IllegalArgumentException this.arity!=s.arity
      */
-    private IntSet extractTuples(Collection< ? > c) {
+    protected final IntSet extractTuples(Collection< ? > c) {
         if (c instanceof TupleSet) {
             final TupleSet s = (TupleSet) c;
             if (arity != s.arity())
@@ -456,5 +456,13 @@ public final class TupleSet extends AbstractSet<Tuple> implements Cloneable {
     @Override
     public int hashCode() {
         return tuples.hashCode();
+    }
+
+
+    /**
+     * Auxiliary setter
+     */
+    protected final void setTuples(IntSet tuples){
+        this.tuples = tuples;
     }
 }

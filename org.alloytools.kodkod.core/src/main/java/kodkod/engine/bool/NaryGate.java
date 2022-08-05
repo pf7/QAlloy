@@ -32,7 +32,7 @@ import kodkod.util.collections.Containers;
  * @invariant #this.inputs > 2
  * @invariant digest = sum(inputs.digest(this.op))
  */
-final class NaryGate extends MultiGate {
+public final class NaryGate extends MultiGate {
 
     private final BooleanFormula[] inputs;
 
@@ -43,7 +43,7 @@ final class NaryGate extends MultiGate {
      * @requires g != null && #g.inputs > 2
      * @ensures this.op' = g.op && this.inputs' = g.inputs && this.label' = label
      */
-    NaryGate(BooleanAccumulator g, int label, int hashcode) {
+    public NaryGate(BooleanAccumulator g, int label, int hashcode) {
         super(g.op, label, hashcode);
         this.inputs = new BooleanFormula[g.size()];
         int index = 0;

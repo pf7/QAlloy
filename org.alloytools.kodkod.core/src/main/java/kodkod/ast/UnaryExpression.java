@@ -52,7 +52,7 @@ public final class UnaryExpression extends Expression {
         if (!op.unary()) {
             throw new IllegalArgumentException("Not a unary operator: " + op);
         }
-        if (child.arity() != 2 && op != ExprOperator.PRE) {
+        if (child.arity() != 2 && op != ExprOperator.PRE && op != ExprOperator.DROP) {
             throw new IllegalArgumentException("Invalid arity: " + child + "::" + child.arity());
         }
         this.expression = child;

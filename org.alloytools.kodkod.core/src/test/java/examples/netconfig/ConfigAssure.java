@@ -374,8 +374,8 @@ public final class ConfigAssure {
             final Relation p = Relation.unary(atom.toString());
             inst.add(p, factory.setOf(atom));
 
-            System.out.print(toQuad(eval.evaluate(addr(p))) + "\t");
-            System.out.print(toQuad(eval.evaluate(netid(p))) + "\t");
+            System.out.print(toQuad((int)eval.evaluate(addr(p))) + "\t");
+            System.out.print(toQuad((int)eval.evaluate(netid(p))) + "\t");
             System.out.print(eval.evaluate(implicitMask(p)) + "\t");
             System.out.println(p);
 

@@ -23,6 +23,7 @@ package kodkod.instance;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import kodkod.engine.CapacityExceededException;
 import kodkod.util.ints.IntSet;
@@ -207,6 +208,23 @@ public final class TupleFactory {
     }
 
     /**
+     * Returns a set of the given arity that contains all weighted tuples whose indeces are
+     * contained in the given int set. Throws an IllegalArgumentException if the set
+     * contains an index that is either negative or greater than
+     * this.universe.size()^arity - 1. The returned QtTupleSet is backed by a clone of
+     * tupleIndices.
+     *
+     * @requires tupleIndices is cloneable
+     */
+    public QtTupleSet setOf(int arity, IntSet tupleIndices, Map<Integer, Number> weight) {
+        try {
+            return new QtTupleSet(universe, arity, tupleIndices.clone(), weight);
+        } catch (CloneNotSupportedException cne) {
+            throw new IllegalArgumentException("uncloneable int set");
+        }
+    }
+
+    /**
      * Returns an initially empty tuple set of the given arity, based on
      * this.universe.
      *
@@ -216,6 +234,14 @@ public final class TupleFactory {
      */
     public TupleSet noneOf(int arity) {
         return new TupleSet(universe, arity);
+    }
+
+    /**
+     * Returns an initially empty quantitative tuple set of the given arity, based on
+     * this.universe.
+     */
+    public QtTupleSet noneOfQt(int arity){
+        return new QtTupleSet(universe, arity);
     }
 
     /**

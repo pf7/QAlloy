@@ -56,7 +56,7 @@ public final class NotGate extends BooleanFormula {
      * @return Ints.superFastHash(this.label)
      */
     @Override
-    int hash(Operator op) {
+    public int hash(Operator op) {
         return hashcode;
     }
 

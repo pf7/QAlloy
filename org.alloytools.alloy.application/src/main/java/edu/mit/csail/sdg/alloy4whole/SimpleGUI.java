@@ -15,35 +15,7 @@
 
 package edu.mit.csail.sdg.alloy4whole;
 
-import static edu.mit.csail.sdg.alloy4.A4Preferences.AnalyzerHeight;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.AnalyzerWidth;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.AnalyzerX;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.AnalyzerY;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.AntiAlias;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.AutoVisualize;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.CoreGranularity;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.CoreMinimization;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.FontName;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.FontSize;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.ImplicitThis;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.InferPartialInstance;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.LAF;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.Model0;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.Model1;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.Model2;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.Model3;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.NoOverflow;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.RecordKodkod;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.SkolemDepth;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.Solver;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.SubMemory;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.SubStack;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.SyntaxDisabled;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.TabSize;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.Unrolls;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.VerbosityPref;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.WarningNonfatal;
-import static edu.mit.csail.sdg.alloy4.A4Preferences.Welcome;
+import static edu.mit.csail.sdg.alloy4.A4Preferences.*;
 import static edu.mit.csail.sdg.alloy4.OurUtil.menu;
 import static edu.mit.csail.sdg.alloy4.OurUtil.menuItem;
 import static java.awt.event.KeyEvent.VK_A;
@@ -64,22 +36,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 
 import javax.swing.Action;
 import javax.swing.Box;
@@ -118,6 +78,7 @@ import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.StyleSheet;
 
+import edu.mit.csail.sdg.translator.*;
 import org.alloytools.alloy.core.AlloyCore;
 
 //import com.apple.eawt.Application;
@@ -168,12 +129,7 @@ import edu.mit.csail.sdg.parser.CompUtil;
 import edu.mit.csail.sdg.sim.SimInstance;
 import edu.mit.csail.sdg.sim.SimTuple;
 import edu.mit.csail.sdg.sim.SimTupleset;
-import edu.mit.csail.sdg.translator.A4Options;
 import edu.mit.csail.sdg.translator.A4Options.SatSolver;
-import edu.mit.csail.sdg.translator.A4Solution;
-import edu.mit.csail.sdg.translator.A4SolutionReader;
-import edu.mit.csail.sdg.translator.A4Tuple;
-import edu.mit.csail.sdg.translator.A4TupleSet;
 import kodkod.engine.fol2sat.HigherOrderDeclException;
 
 /**
@@ -454,6 +410,19 @@ public final class SimpleGUI implements ComponentListener, Listener {
         // Copy the platform-dependent binaries
         Util.copy(true, false, platformBinary, arch + "/libminisat.so", arch + "/libminisatx1.so", arch + "/libminisat.jnilib", arch + "/libminisat.dylib", arch + "/libminisatprover.so", arch + "/libminisatproverx1.so", arch + "/libminisatprover.jnilib", arch + "/libminisatprover.dylib", arch + "/libzchaff.so", arch + "/libzchaffmincost.so", arch + "/libzchaffx1.so", arch + "/libzchaff.jnilib", arch + "/liblingeling.so", arch + "/liblingeling.dylib", arch + "/liblingeling.jnilib", arch + "/plingeling", arch + "/libglucose.so", arch + "/libglucose.dylib", arch + "/libglucose.jnilib", arch + "/libcryptominisat.so", arch + "/libcryptominisat.la", arch + "/libcryptominisat.dylib", arch + "/libcryptominisat.jnilib", arch + "/berkmin", arch + "/spear", arch + "/cryptominisat");
         Util.copy(false, false, platformBinary, arch + "/minisat.dll", arch + "/cygminisat.dll", arch + "/libminisat.dll.a", arch + "/minisatprover.dll", arch + "/cygminisatprover.dll", arch + "/libminisatprover.dll.a", arch + "/glucose.dll", arch + "/cygglucose.dll", arch + "/libglucose.dll.a", arch + "/zchaff.dll", arch + "/berkmin.exe", arch + "/spear.exe");
+
+        // Supported SMT Solvers binaries
+        for(String smt : Arrays.asList("cvc4", "z3", "mathsat", "yices")){
+            Util.copy(true, false, platformBinary, smt + fs  + smt + "_" + os);
+            Util.copy(true, false, platformBinary, smt + "/" + smt + "_" + os);
+        }
+        // SMT Solvers JNI, dll, ...
+        Util.copy(true, false, platformBinary, arch + "/libcvc4jni.so", arch + "/libcvc4jni.jnilib", arch + "/libz3.dylib", arch + "/libz3java.dylib", arch + "/libz3.so", arch + "/libz3java.so");
+        // ensure that windows dlls are copied
+        if(arch.contains("windows"))
+            arch = "x86-windows";
+        Util.copy(false, false, platformBinary, arch + "/libcvc4.dll.a", arch + "/libcvc4.a", arch + "/cvc4.exe", arch + "/libz3.dll", arch + "/libz3java.dll", arch + "/mathsat.dll", arch + "/mpir.dll", arch + "/libyices.dll");
+
         // Copy the model files
         Util.copy(false, true, alloyHome(), "models/book/appendixA/addressBook1.als", "models/book/appendixA/addressBook2.als", "models/book/appendixA/barbers.als", "models/book/appendixA/closure.als", "models/book/appendixA/distribution.als", "models/book/appendixA/phones.als", "models/book/appendixA/prison.als", "models/book/appendixA/properties.als", "models/book/appendixA/ring.als", "models/book/appendixA/spanning.als", "models/book/appendixA/tree.als", "models/book/appendixA/tube.als", "models/book/appendixA/undirected.als", "models/book/appendixE/hotel.thm", "models/book/appendixE/p300-hotel.als", "models/book/appendixE/p303-hotel.als", "models/book/appendixE/p306-hotel.als", "models/book/chapter2/addressBook1a.als", "models/book/chapter2/addressBook1b.als", "models/book/chapter2/addressBook1c.als", "models/book/chapter2/addressBook1d.als", "models/book/chapter2/addressBook1e.als", "models/book/chapter2/addressBook1f.als", "models/book/chapter2/addressBook1g.als", "models/book/chapter2/addressBook1h.als", "models/book/chapter2/addressBook2a.als", "models/book/chapter2/addressBook2b.als", "models/book/chapter2/addressBook2c.als", "models/book/chapter2/addressBook2d.als", "models/book/chapter2/addressBook2e.als", "models/book/chapter2/addressBook3a.als", "models/book/chapter2/addressBook3b.als", "models/book/chapter2/addressBook3c.als", "models/book/chapter2/addressBook3d.als", "models/book/chapter2/theme.thm", "models/book/chapter4/filesystem.als", "models/book/chapter4/grandpa1.als", "models/book/chapter4/grandpa2.als", "models/book/chapter4/grandpa3.als", "models/book/chapter4/lights.als", "models/book/chapter5/addressBook.als", "models/book/chapter5/lists.als", "models/book/chapter5/sets1.als", "models/book/chapter5/sets2.als", "models/book/chapter6/hotel.thm", "models/book/chapter6/hotel1.als", "models/book/chapter6/hotel2.als", "models/book/chapter6/hotel3.als", "models/book/chapter6/hotel4.als", "models/book/chapter6/mediaAssets.als", "models/book/chapter6/memory/abstractMemory.als", "models/book/chapter6/memory/cacheMemory.als", "models/book/chapter6/memory/checkCache.als", "models/book/chapter6/memory/checkFixedSize.als", "models/book/chapter6/memory/fixedSizeMemory.als", "models/book/chapter6/memory/fixedSizeMemory_H.als", "models/book/chapter6/ringElection.thm", "models/book/chapter6/ringElection1.als", "models/book/chapter6/ringElection2.als", "models/examples/algorithms/dijkstra.als", "models/examples/algorithms/dijkstra.thm", "models/examples/algorithms/messaging.als", "models/examples/algorithms/messaging.thm", "models/examples/algorithms/opt_spantree.als", "models/examples/algorithms/opt_spantree.thm", "models/examples/algorithms/peterson.als", "models/examples/algorithms/ringlead.als", "models/examples/algorithms/ringlead.thm", "models/examples/algorithms/s_ringlead.als", "models/examples/algorithms/stable_mutex_ring.als", "models/examples/algorithms/stable_mutex_ring.thm", "models/examples/algorithms/stable_orient_ring.als", "models/examples/algorithms/stable_orient_ring.thm", "models/examples/algorithms/stable_ringlead.als", "models/examples/algorithms/stable_ringlead.thm", "models/examples/case_studies/INSLabel.als", "models/examples/case_studies/chord.als", "models/examples/case_studies/chord2.als", "models/examples/case_studies/chordbugmodel.als", "models/examples/case_studies/com.als", "models/examples/case_studies/firewire.als", "models/examples/case_studies/firewire.thm", "models/examples/case_studies/ins.als", "models/examples/case_studies/iolus.als", "models/examples/case_studies/sync.als", "models/examples/case_studies/syncimpl.als", "models/examples/puzzles/farmer.als", "models/examples/puzzles/farmer.thm", "models/examples/puzzles/handshake.als", "models/examples/puzzles/handshake.thm", "models/examples/puzzles/hanoi.als", "models/examples/puzzles/hanoi.thm", "models/examples/systems/file_system.als", "models/examples/systems/file_system.thm", "models/examples/systems/javatypes_soundness.als", "models/examples/systems/lists.als", "models/examples/systems/lists.thm", "models/examples/systems/marksweepgc.als", "models/examples/systems/views.als", "models/examples/toys/birthday.als", "models/examples/toys/birthday.thm", "models/examples/toys/ceilingsAndFloors.als", "models/examples/toys/ceilingsAndFloors.thm", "models/examples/toys/genealogy.als", "models/examples/toys/genealogy.thm", "models/examples/toys/grandpa.als", "models/examples/toys/grandpa.thm", "models/examples/toys/javatypes.als", "models/examples/toys/life.als", "models/examples/toys/life.thm", "models/examples/toys/numbering.als", "models/examples/toys/railway.als", "models/examples/toys/railway.thm", "models/examples/toys/trivial.als", "models/examples/tutorial/farmer.als", "models/util/boolean.als", "models/util/graph.als", "models/util/integer.als", "models/util/natural.als", "models/util/ordering.als", "models/util/relation.als", "models/util/seqrel.als", "models/util/sequence.als", "models/util/sequniv.als", "models/util/ternary.als", "models/util/time.als");
         // Record the locations
@@ -698,6 +667,7 @@ public final class SimpleGUI implements ComponentListener, Listener {
             menuItem(filemenu, "Close", 'W', 'W', doClose());
             menuItem(filemenu, "Clear Temporary Directory", doClearTemp());
             menuItem(filemenu, "Quit", 'Q', (Util.onMac() ? -1 : 'Q'), doQuit());
+            //
             boolean found = false;
             for (StringPref p : new StringPref[] {
                                                   Model0, Model1, Model2, Model3
@@ -1131,6 +1101,19 @@ public final class SimpleGUI implements ComponentListener, Listener {
     }
 
     /**
+     * @return The operating system where SimpleGUI is running.
+     */
+    private String getOS(){
+        String os = "linux";
+        if(Util.onMac())
+            os = "mac";
+        else if(Util.onWindows())
+            os = "windows";
+
+        return os;
+    }
+
+    /**
      * This method executes a particular RUN or CHECK command.
      */
     private Runner doRun(Integer commandIndex) {
@@ -1164,7 +1147,7 @@ public final class SimpleGUI implements ComponentListener, Listener {
         if (i >= commands.size())
             i = commands.size() - 1;
         SimpleCallback1 cb = new SimpleCallback1(this, null, log, VerbosityPref.get().ordinal(), latestAlloyVersionName, latestAlloyVersion);
-        SimpleTask1 task = new SimpleTask1();
+        //SimpleTask1 task = new SimpleTask1();
         A4Options opt = new A4Options();
         opt.tempDirectory = alloyHome() + fs + "tmp";
         opt.solverDirectory = alloyHome() + fs + "binary";
@@ -1177,12 +1160,50 @@ public final class SimpleGUI implements ComponentListener, Listener {
         opt.coreGranularity = CoreGranularity.get();
         opt.originalFilename = Util.canon(text.get().getFilename());
         opt.solver = Solver.get();
-        task.bundleIndex = i;
-        task.bundleWarningNonFatal = WarningNonfatal.get();
-        task.map = text.takeSnapshot();
-        task.options = opt.dup();
-        task.resolutionMode = (Version.experimental && ImplicitThis.get()) ? 2 : 1;
-        task.tempdir = maketemp();
+        opt.analysisType = AnalysisType.get();
+        opt.quantitativeSolver = SMTSolver.get();
+
+        WorkerEngine.WorkerTask task;
+        if(inQTcontext() && i != -2){
+            //Check if the selected solver is an SMT Solver
+            String solver;
+            switch(opt.quantitativeSolver){
+                case "CVC4":
+                    solver = "cvc4_" + getOS();
+                    break;
+                case "Z3":
+                    solver = "z3_" + getOS();
+                    break;
+                case "MathSAT":
+                    solver = "mathsat_" + getOS();
+                    break;
+                default: // Yices
+                    solver = "yices_" + getOS();
+                    break;
+            }
+
+            task = new QuantitativeTask(
+                    opt.dup(),
+                    i,
+                    (Version.experimental && ImplicitThis.get()) ? 2 : 1,
+                    text.takeSnapshot(),
+                    maketemp(),
+                    opt.solverDirectory + fs + solver,
+                    WarningNonfatal.get());
+            qtTask = (QuantitativeTask)task;
+        } else{
+            SimpleTask1 st1 = new SimpleTask1();
+            st1.bundleIndex = i;
+            st1.bundleWarningNonFatal = WarningNonfatal.get();
+            st1.map = text.takeSnapshot();
+            st1.options = opt.dup();
+            st1.resolutionMode = (Version.experimental && ImplicitThis.get()) ? 2 : 1;
+            st1.tempdir = maketemp();
+            task = st1;
+
+            qtTask = null;
+        }
+
         try {
             runmenu.setEnabled(false);
             runbutton.setVisible(false);
@@ -1230,8 +1251,10 @@ public final class SimpleGUI implements ComponentListener, Listener {
         if (latestAutoInstance.length() > 0) {
             String f = latestAutoInstance;
             latestAutoInstance = "";
-            if (subrunningTask == 2)
+            if (subrunningTask == 2) {
+                viz.setQuantitativeAnalysis(inQTcontext());
                 viz.loadXML(f, true);
+            }
             else if (AutoVisualize.get() || subrunningTask == 1)
                 doVisualize("XML: " + f);
         }
@@ -1432,6 +1455,10 @@ public final class SimpleGUI implements ComponentListener, Listener {
                 addToMenu(optmenu, Unrolls);
                 addToMenu(optmenu, ImplicitThis, NoOverflow, InferPartialInstance);
             }
+
+            optmenu.addSeparator();
+            //addToMenu(optmenu, A4Preferences.AnalysisType); // TODO
+            addToMenu(optmenu, SMTSolver);
 
         } finally {
             wrap = false;
@@ -1731,6 +1758,7 @@ public final class SimpleGUI implements ComponentListener, Listener {
             }
         }
         if (arg.startsWith("XML: ")) { // XML: filename
+            viz.setQuantitativeAnalysis(inQTcontext());
             viz.loadXML(Util.canon(arg.substring(5)), false);
         }
         return null;
@@ -1761,8 +1789,19 @@ public final class SimpleGUI implements ComponentListener, Listener {
             if (WorkerEngine.isBusy())
                 throw new RuntimeException("Alloy4 is currently executing a SAT solver command. Please wait until that command has finished.");
             SimpleCallback1 cb = new SimpleCallback1(SimpleGUI.this, viz, log, VerbosityPref.get().ordinal(), latestAlloyVersionName, latestAlloyVersion);
-            SimpleTask2 task = new SimpleTask2();
-            task.filename = arg;
+            /*SimpleTask2 task = new SimpleTask2();
+            task.filename = arg;*/
+
+            WorkerEngine.WorkerTask task;
+            if(inQTcontext()){
+                qtTask.filename = arg;
+                task = qtTask;
+            }
+            else{
+                task = new SimpleTask2();
+                ((SimpleTask2)task).filename = arg;
+            }
+
             try {
                 if (AlloyCore.isDebug())
                     WorkerEngine.runLocally(task, cb);
@@ -1859,7 +1898,9 @@ public final class SimpleGUI implements ComponentListener, Listener {
                         fc.put(name, content);
                     }
                 root = CompUtil.parseEverything_fromFile(A4Reporter.NOP, fc, mainname, (Version.experimental && ImplicitThis.get()) ? 2 : 1);
-                ans = A4SolutionReader.read(root.getAllReachableSigs(), x);
+                ans = !inQTcontext() ?
+                        A4SolutionReader.read(root.getAllReachableSigs(), x) :
+                        A4QtSolutionReader.read(root.getAllReachableSigs(), x);
                 for (ExprVar a : ans.getAllAtoms()) {
                     root.addGlobal(a.label, a);
                 }
@@ -2404,5 +2445,17 @@ public final class SimpleGUI implements ComponentListener, Listener {
                 r.run();
             }
         };
+    }
+
+    /* Current QuantitativeTask */
+    private QuantitativeTask qtTask = null;
+
+    /**
+     * Helper method to check if the analysis is being performed in a
+     * qualitative or quantitative setting.
+     * @return AnalysisType != Boolean
+     */
+    public static boolean inQTcontext(){
+        return !AnalysisType.get().equalsIgnoreCase("Boolean");
     }
 }

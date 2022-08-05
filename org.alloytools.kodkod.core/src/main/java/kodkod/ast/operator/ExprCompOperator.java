@@ -40,5 +40,37 @@ public enum ExprCompOperator {
                                   public String toString() {
                                       return "=";
                                   }
+                              },
+                              /** `<' operator */
+                              LT {
+
+                                  @Override
+                                  public String toString() {
+                                      return "<";
+                                  }
+                              },
+                              /** `<=' operator */
+                              LTE {
+
+                                  @Override
+                                  public String toString() {
+                                      return "<=";
+                                  }
+                              },
+                              /** `>' operator */
+                              GT {
+
+                                  @Override
+                                  public String toString() {
+                                      return ">";
+                                  }
+                              },
+                              /** `>=' operator */
+                              GTE {
+
+                                  @Override
+                                  public String toString() {
+                                      return ">=";
+                                  }
                               }
 }

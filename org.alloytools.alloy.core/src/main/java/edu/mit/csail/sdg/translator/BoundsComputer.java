@@ -151,7 +151,7 @@ final class BoundsComputer {
         if (sum == null) {
             // If sig doesn't have children, then sig should make a fresh
             // relation for itself
-            sum = sol.addRel(sig.label, lower, upper);
+            sum = sol.addRel(sig.label, lower, upper, sig.isInt != null);
         } else if (sig.isAbstract == null) {
             // If sig has children, and sig is not abstract, then create a new
             // relation to act as the remainder.
@@ -167,7 +167,7 @@ final class BoundsComputer {
                 lower.removeAll(childTS);
                 upper.removeAll(childTS);
             }
-            sum = sum.union(sol.addRel(sig.label + " remainder", lower, upper));
+            sum = sum.union(sol.addRel(sig.label + " remainder", lower, upper, sig.isInt != null));
         }
         sol.addSig(sig, sum);
         return sum;
@@ -199,11 +199,13 @@ final class BoundsComputer {
         }
         // Allocate a relation for this subset sig, then bound it
         rep.bound("Sig " + sig + " in " + ts + "\n");
-        Relation r = sol.addRel(sig.label, null, ts);
+        Relation r = sol.addRel(sig.label, null, ts, sig.isInt != null);
         sol.addSig(sig, r);
         // Add a constraint that it is INDEED a subset of the union of its
         // parents
-        sol.addFormula(r.in(sum), sig.isSubset);
+        // ---
+        // Quantitative extension: added drop to ensure quantitative subsigs can have higher weight-value than the parent sigs.
+        sol.addFormula(sol.isQuantitativeSolving() ? r.drop().in(sum) : r.in(sum), sig.isSubset);
         return r;
     }
 
@@ -259,7 +261,7 @@ final class BoundsComputer {
         }
         if (ex instanceof ExprBinary) {
             ExprBinary b = (ExprBinary) ex;
-            if (b.op == ExprBinary.Op.ARROW || b.op == ExprBinary.Op.PLUS || b.op == ExprBinary.Op.JOIN) {
+            if (b.op == ExprBinary.Op.ARROW || b.op == ExprBinary.Op.PLUS || b.op == ExprBinary.Op.JOIN || b.op == ExprBinary.Op.MULTIJOIN) {
                 Expression left = sim(b.left);
                 if (left == null)
                     return null;
@@ -270,6 +272,8 @@ final class BoundsComputer {
                     return left.product(right);
                 if (b.op == ExprBinary.Op.PLUS)
                     return left.union(right);
+                if (b.op == ExprBinary.Op.MULTIJOIN)
+                    return left.multijoin(right);
                 else
                     return left.join(right);
             }
@@ -294,6 +298,10 @@ final class BoundsComputer {
     /**
      * Computes the bounds for sigs/fields, then construct a BoundsComputer object
      * that you can query.
+     * --------------------------------------------------------------------------------
+     * Quantitative extension: When bounding a field of arity n whose Sig has
+     * multiplicity one, if the problem at hand is quantitative, the simplification of
+     * bounding it into a relation of arity n-1 is no longer applied.
      */
     private BoundsComputer(A4Reporter rep, A4Solution sol, ScopeComputer sc, Iterable<Sig> sigs) throws Err {
         this.sc = sc;
@@ -370,8 +378,8 @@ final class BoundsComputer {
                 }
                 if (firstTS.size() != (n > 0 ? 1 : 0) || nextTS.size() != n - 1)
                     break;
-                sol.addField(f1, sol.addRel(s.label + "." + f1.label, firstTS, firstTS));
-                sol.addField(f2, sol.addRel(s.label + "." + f2.label, nextTS, nextTS));
+                sol.addField(f1, sol.addRel(s.label + "." + f1.label, firstTS, firstTS, f1.isInt != null));
+                sol.addField(f2, sol.addRel(s.label + "." + f2.label, nextTS, nextTS, f2.isInt != null));
                 rep.bound("Field " + s.label + "." + f1.label + " == " + firstTS + "\n");
                 rep.bound("Field " + s.label + "." + f2.label + " == " + nextTS + "\n");
                 continue again;
@@ -382,11 +390,11 @@ final class BoundsComputer {
                     Expression sim = sim(f.decl().expr);
                     if (sim != null) {
                         rep.bound("Field " + s.label + "." + f.label + " defined to be " + sim + "\n");
-                        sol.addField(f, sol.a2k(s).product(sim));
+                        sol.addField(f, !sol.isQuantitativeSolving() ? sol.a2k(s).product(sim) : sim);
                         continue;
                     }
                 }
-                Type t = isOne ? Sig.UNIV.type().join(f.type()) : f.type();
+                Type t = isOne && !sol.isQuantitativeSolving() ? Sig.UNIV.type().join(f.type()) : f.type();
                 TupleSet ub = factory.noneOf(t.arity());
                 for (List<PrimSig> p : t.fold()) {
                     TupleSet upper = null;
@@ -399,8 +407,8 @@ final class BoundsComputer {
                     }
                     ub.addAll(upper);
                 }
-                Relation r = sol.addRel(s.label + "." + f.label, null, ub);
-                sol.addField(f, isOne ? sol.a2k(s).product(r) : r);
+                Relation r = sol.addRel(s.label + "." + f.label, null, ub, f.isInt != null);
+                sol.addField(f, isOne && !sol.isQuantitativeSolving() ? sol.a2k(s).product(r) : r);
             }
         }
         // Add any additional SIZE constraints

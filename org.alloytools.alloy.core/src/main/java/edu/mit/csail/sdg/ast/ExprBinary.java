@@ -198,6 +198,8 @@ public final class ExprBinary extends Expr {
                            ISSEQ_ARROW_LONE("isSeq->lone", true),
                            /** . */
                            JOIN(".", false),
+                           /** ; */
+                           MULTIJOIN(";", false),
                            /** &lt;: */
                            DOMAIN("<:", false),
                            /** :&gt; */
@@ -216,6 +218,8 @@ public final class ExprBinary extends Expr {
                            IMINUS("@-", false),
                            /** multiply */
                            MUL("*", false),
+                           /** scalar multiplication */
+                           SCALAR("**", false),
                            /** divide */
                            DIV("/", false),
                            /** remainder */
@@ -300,20 +304,38 @@ public final class ExprBinary extends Expr {
                         return right;
                     break;
                 }
+                case IPLUS:
+                case IMINUS:
                 case MUL :
+                case DIV :
+                case REM:
+                case LT :
+                case LTE :
+                case GT :
+                case GTE :
+                case NOT_LT :
+                case NOT_GT :
+                case NOT_LTE :
+                case NOT_GTE : {
+                    //todo: distinguish between quantitative/qualitative context
+                    left = left.typecheck_as_set(); //left.type.is_int() ? left.typecheck_as_int() : left.typecheck_as_set();
+                    right = right.typecheck_as_set();//right.type.is_int() ? right.typecheck_as_int() : right.typecheck_as_set();
+                    break;
+                }
+                /*case MUL :
                 case DIV :
                 case REM :
                 case LT :
                 case LTE :
                 case GT :
-                case GTE :
+                case GTE :*/
                 case SHL :
                 case SHR :
                 case SHA :
-                case NOT_LT :
+                /*case NOT_LT :
                 case NOT_GT :
                 case NOT_LTE :
-                case NOT_GTE : {
+                case NOT_GTE :*/ {
                     left = left.typecheck_as_int();
                     right = right.typecheck_as_int();
                     break;
@@ -324,12 +346,12 @@ public final class ExprBinary extends Expr {
                     right = right.typecheck_as_formula();
                     break;
                 }
-                case IPLUS :
+                /*case IPLUS : TODO
                 case IMINUS : {
                     left = left.typecheck_as_int();
                     right = right.typecheck_as_int();
                     break;
-                }
+                }*/
                 case PLUS :
                 case MINUS :
                 case EQUALS :
@@ -352,6 +374,11 @@ public final class ExprBinary extends Expr {
                     // }
                     break;
                 }
+                case SCALAR: {
+                    left = left.typecheck_as_int();
+                    right = right.typecheck_as_set();
+                    break;
+                }
                 default : {
                     left = left.typecheck_as_set();
                     right = right.typecheck_as_set();
@@ -370,15 +397,36 @@ public final class ExprBinary extends Expr {
                     case NOT_LTE :
                     case NOT_GT :
                     case NOT_GTE :
+                        if(!left.type.hasCommonArity(right.type)) {
+                            e = error(pos, this + " can be used only between 2 expressions of the same arity, or between 2 integer expressions.", left, right);
+                            break;
+                        }
                     case AND :
                     case OR :
                     case IFF :
                     case IMPLIES :
                         type = Type.FORMULA;
                         break;
+                    case IPLUS:
+                    case IMINUS:
                     case MUL :
                     case DIV :
                     case REM :
+                        // todo: distinguish between quantitative/qualitative context
+                        /*if(left.type.is_int() && !right.type.is_int())
+                            type = right.type;
+                        else if (!left.type.is_int() && right.type.is_int())
+                            type = left.type;
+                        else*/ type = left.type.intersect(right.type);
+
+                        if(type.hasNoTuple()){
+                            e = error(pos, this + " cannot be applied over two expressions of disjoint types.", left, right);
+                            break;
+                        }
+                        if(type != EMPTY)
+                            break;
+                        e = error(pos, this + " can be used only between 2 (numeric) expressions of the same arity.", left, right);
+                        break;
                     case SHL :
                     case SHR :
                     case SHA :
@@ -405,10 +453,10 @@ public final class ExprBinary extends Expr {
                         }
                         e = error(pos, this + " can be used only between 2 expressions of the same arity, or between 2 integer expressions.", left, right);
                         break;
-                    case IPLUS :
+                    /*case IPLUS : TODO
                     case IMINUS :
                         type = Type.smallIntType();
-                        break;
+                        break;*/
                     case IN :
                     case NOT_IN :
                         type = (left.type.hasCommonArity(right.type)) ? Type.FORMULA : EMPTY;
@@ -416,9 +464,10 @@ public final class ExprBinary extends Expr {
                             e = error(pos, this + " can be used only between 2 expressions of the same arity.", left, right);
                         break;
                     case JOIN :
+                    case MULTIJOIN:
                         type = left.type.join(right.type);
                         if (type == EMPTY)
-                            return ExprBadJoin.make(pos, closingBracket, left, right);
+                            return ExprBadJoin.make(pos, closingBracket, this, left, right);
                         break;
                     case DOMAIN :
                         type = right.type.domainRestrict(left.type);
@@ -434,6 +483,9 @@ public final class ExprBinary extends Expr {
                         type = left.type.intersect(right.type);
                         if (type == EMPTY)
                             e = error(pos, "& can be used only between 2 expressions of the same arity.", left, right);
+                        break;
+                    case SCALAR :
+                        type = right.type;
                         break;
                     default :
                         type = left.type.product(right.type);
@@ -469,23 +521,67 @@ public final class ExprBinary extends Expr {
         ErrorWarning w = null;
         Type a = left.type, b = right.type;
         switch (op) {
-            case MUL :
+            /*case MUL :
             case DIV :
             case REM :
             case LT :
             case LTE :
             case GT :
-            case GTE :
+            case GTE :*/
             case SHL :
             case SHR :
             case SHA :
+            /*case NOT_LTE :
+            case NOT_GTE :
+            case NOT_LT :
+            case NOT_GT :*/ {
+                a = (b = Type.smallIntType());
+                break;
+            }
+            /** ----------------------- **/
+            /** Quantitative Extension  **/
+            case MUL :
+            case DIV :
+            case REM:
+            case IPLUS:
+            case IMINUS:
+            case LT :
+            case LTE :
+            case GT :
+            case GTE :
             case NOT_LTE :
             case NOT_GTE :
             case NOT_LT :
             case NOT_GT : {
-                a = (b = Type.smallIntType());
+                // todo: distinguish between quantitative/qualitative context
+                if(a.is_int() && b.is_int()){
+                    a = (b = Type.smallIntType());
+                }else if(!a.is_int() && !b.is_int()){
+                    if(p.is_int() || p.is_bool){
+                        a = a.intersect(b);
+                        b = a;
+                    }else {
+                        a = a.intersect(p);
+                        b = b.intersect(p);
+                    }
+                    if (warns == null)
+                        break;
+                    if (a == EMPTY && b == EMPTY)
+                        w = warn(this + " is irrelevant since both subexpressions are redundant.", p);
+                    else if (a == EMPTY)
+                        w = warn(this + " is irrelevant since the left subexpression is redundant.", p);
+                    else if (b == EMPTY)
+                        w = warn(this + " is irrelevant since the right subexpression is redundant.", p);
+                }
                 break;
             }
+            case SCALAR : {
+                b = b.intersect(p);
+                if (b == EMPTY)
+                    w = warn(this + " is irrelevant since the right subexpression is redundant.", p);
+                break;
+            }
+            /** ----------------------- **/
             case AND :
             case OR :
             case IFF :
@@ -541,12 +637,12 @@ public final class ExprBinary extends Expr {
                     w = warn("& is irrelevant because the two subexpressions are always disjoint.");
                 break;
             }
-            case IPLUS :
+            /*case IPLUS : TODO
             case IMINUS : {
                 a = Type.smallIntType();
                 b = Type.smallIntType();
                 break;
-            }
+            }*/
             case PLUSPLUS :
             case PLUS : {
                 a = a.intersect(p);
@@ -576,7 +672,8 @@ public final class ExprBinary extends Expr {
                 }
                 break;
             }
-            case JOIN : {
+            case JOIN :
+            case MULTIJOIN: {
                 if (warns != null && type.hasNoTuple())
                     w = warn("The join operation here always yields an empty set.");
                 a = (b = EMPTY);

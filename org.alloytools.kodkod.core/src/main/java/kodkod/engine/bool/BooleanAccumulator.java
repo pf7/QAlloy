@@ -212,7 +212,7 @@ public final class BooleanAccumulator extends BooleanValue implements Iterable<B
      * @throws UnsupportedOperationException
      */
     @Override
-    BooleanValue negation() {
+    public BooleanValue negation() {
         throw new UnsupportedOperationException();
     }
 

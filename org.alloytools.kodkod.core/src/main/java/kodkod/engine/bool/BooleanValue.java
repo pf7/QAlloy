@@ -39,14 +39,14 @@ package kodkod.engine.bool;
  */
 public abstract class BooleanValue implements Comparable<BooleanValue> {
 
-    BooleanValue() {}
+    public BooleanValue() {}
 
     /**
      * Returns the negation of this boolean value
      *
      * @return { f: BooleanFormula | [[f]] = ![[this]] }
      */
-    abstract BooleanValue negation();
+    public abstract BooleanValue negation();
 
     /**
      * Returns the label for this value.

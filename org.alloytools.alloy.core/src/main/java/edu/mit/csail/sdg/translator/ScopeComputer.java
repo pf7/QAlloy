@@ -344,8 +344,14 @@ final class ScopeComputer {
     /**
      * Compute the scopes, based on the settings in the "cmd", then log messages to
      * the reporter.
+     * -----------------------------------------------------------------------------
+     * Quantitative extension: a new parameter {@code boundedInts} is considered,
+     * to specify if the scope takes into account bounded integers (for the usual
+     * Boolean analysis) or unbounded integers (for quantitative analysis).
+     *
+     * Within a quantitative setting, Int = {}.
      */
-    private ScopeComputer(A4Reporter rep, Iterable<Sig> sigs, Command cmd) throws Err {
+    private ScopeComputer(A4Reporter rep, Iterable<Sig> sigs, Command cmd, boolean boundedInts) throws Err {
         this.rep = rep;
         this.cmd = cmd;
         boolean shouldUseInts = true; // TODO CompUtil.areIntsUsed(sigs, cmd);
@@ -430,10 +436,15 @@ final class ScopeComputer {
         for (Sig s : sigs)
             if (s.isTopLevel())
                 computeLowerBound((PrimSig) s);
-        int max = max(), min = min();
-        if (max >= min)
-            for (int i = min; i <= max; i++)
-                atoms.add("" + i);
+
+        // Integer representation depending on the analysis context
+        if(boundedInts) {
+            // Boolean Analysis
+            int max = max(), min = min();
+            if (max >= min)
+                for (int i = min; i <= max; i++)
+                    atoms.add("" + i);
+        }
     }
 
     // ===========================================================================================================================//
@@ -466,7 +477,7 @@ final class ScopeComputer {
      * scopes.
      */
     static Pair<A4Solution,ScopeComputer> compute(A4Reporter rep, A4Options opt, Iterable<Sig> sigs, Command cmd) throws Err {
-        ScopeComputer sc = new ScopeComputer(rep, sigs, cmd);
+        ScopeComputer sc = new ScopeComputer(rep, sigs, cmd, opt.analysisType.equals("Boolean"));
         Set<String> set = cmd.getAllStringConstants(sigs);
         if (sc.maxstring >= 0 && set.size() > sc.maxstring)
             rep.scope("Sig String expanded to contain all " + set.size() + " String constant(s) referenced by this command.\n");

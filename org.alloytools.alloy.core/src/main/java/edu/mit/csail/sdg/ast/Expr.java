@@ -492,6 +492,19 @@ public abstract class Expr extends Browsable {
     }
 
     /**
+     * Returns the expression (this;x)
+     * <p>
+     * 1. this must be a set or relation
+     * <p>
+     * 2. x must be a set or relation
+     * <p>
+     * 3. at most one of them can be a unary set
+     */
+    public final Expr multijoin(Expr x) {
+        return ExprBinary.Op.MULTIJOIN.make(span().merge(x.span()), null, this, x);
+    }
+
+    /**
      * Returns the expression (this <: x)
      * <p>
      * this must be a unary set
@@ -982,7 +995,7 @@ public abstract class Expr extends Browsable {
     public final Decl someOf(String label) throws Err {
         Expr x = ExprUnary.Op.SOMEOF.make(span(), this);
         ExprVar v = ExprVar.make(x.span(), label, type);
-        return new Decl(null, null, null, Arrays.asList(v), x);
+        return new Decl(null, null, null, null, Arrays.asList(v), x);
     }
 
     /**
@@ -1004,7 +1017,7 @@ public abstract class Expr extends Browsable {
     public final Decl loneOf(String label) throws Err {
         Expr x = ExprUnary.Op.LONEOF.make(span(), this);
         ExprVar v = ExprVar.make(x.span(), label, type);
-        return new Decl(null, null, null, Arrays.asList(v), x);
+        return new Decl(null, null, null, null, Arrays.asList(v), x);
     }
 
     /**
@@ -1026,7 +1039,7 @@ public abstract class Expr extends Browsable {
     public final Decl oneOf(String label) throws Err {
         Expr x = ExprUnary.Op.ONEOF.make(span(), this);
         ExprVar v = ExprVar.make(x.span(), label, type);
-        return new Decl(null, null, null, Arrays.asList(v), x);
+        return new Decl(null, null, null, null, Arrays.asList(v), x);
     }
 
     /**
@@ -1048,7 +1061,7 @@ public abstract class Expr extends Browsable {
     public final Decl setOf(String label) throws Err {
         Expr x = ExprUnary.Op.SETOF.make(span(), this);
         ExprVar v = ExprVar.make(x.span(), label, type);
-        return new Decl(null, null, null, Arrays.asList(v), x);
+        return new Decl(null, null, null, null, Arrays.asList(v), x);
     }
 
     /**
@@ -1121,6 +1134,15 @@ public abstract class Expr extends Browsable {
      */
     public final Expr closure() {
         return ExprUnary.Op.CLOSURE.make(span(), this);
+    }
+
+    /**
+     * Returns the expression (drop this)
+     * <p>
+     * this must be a set or a relation
+     */
+    public final Expr drop() {
+        return ExprUnary.Op.DROP.make(span(), this);
     }
 
     /**

@@ -78,7 +78,7 @@ import kodkod.util.ints.IntVector;
  * Translate an Alloy AST into Kodkod AST then attempt to solve it using Kodkod.
  */
 
-public final class TranslateAlloyToKodkod extends VisitReturn<Object> {
+public class TranslateAlloyToKodkod extends VisitReturn<Object> {
 
     static int                                cnt              = 0;
 
@@ -99,7 +99,7 @@ public final class TranslateAlloyToKodkod extends VisitReturn<Object> {
      * If frame!=null, it stores the scope, bounds, and other settings necessary for
      * performing a solve.
      */
-    private final A4Solution                  frame;
+    protected final A4Solution                  frame;
 
     /**
      * If frame==null, it stores the mapping from each Sig/Field/Skolem/Atom to its
@@ -114,7 +114,7 @@ public final class TranslateAlloyToKodkod extends VisitReturn<Object> {
     private final ConstMap<String,Expression> s2k;
 
     /** The current reporter. */
-    private A4Reporter                        rep;
+    protected A4Reporter                        rep;
 
     /** If nonnull, it's the current command. */
     private final Command                     cmd;
@@ -141,7 +141,7 @@ public final class TranslateAlloyToKodkod extends VisitReturn<Object> {
      *            list)
      * @param cmd - the command to solve (must not be null)
      */
-    private TranslateAlloyToKodkod(A4Reporter rep, A4Options opt, Iterable<Sig> sigs, Command cmd) throws Err {
+    protected TranslateAlloyToKodkod(A4Reporter rep, A4Options opt, Iterable<Sig> sigs, Command cmd) throws Err {
         this.unrolls = opt.unrolls;
         this.rep = (rep != null) ? rep : A4Reporter.NOP;
         this.cmd = cmd;
@@ -152,7 +152,7 @@ public final class TranslateAlloyToKodkod extends VisitReturn<Object> {
         this.max = pair.a.max();
         this.a2k = null;
         this.s2k = null;
-        BoundsComputer.compute(rep, frame, pair.b, sigs);
+        BoundsComputer.compute(this.rep, frame, pair.b, sigs);
     }
 
     /**
@@ -163,7 +163,7 @@ public final class TranslateAlloyToKodkod extends VisitReturn<Object> {
      * @param a2k - the mapping from Alloy sig/field/skolem/atom to the
      *            corresponding Kodkod expression
      */
-    private TranslateAlloyToKodkod(int bitwidth, int unrolls, Map<Expr,Expression> a2k, Map<String,Expression> s2k) throws Err {
+    protected TranslateAlloyToKodkod(int bitwidth, int unrolls, Map<Expr,Expression> a2k, Map<String,Expression> s2k) throws Err {
         this.unrolls = unrolls;
         if (bitwidth < 0)
             throw new ErrorSyntax("Cannot specify a bitwidth less than 0");
@@ -183,19 +183,19 @@ public final class TranslateAlloyToKodkod extends VisitReturn<Object> {
      * Associate the given formula with the given expression, then return the
      * formula as-is.
      */
-    private Formula k2pos(Formula f, Expr e) throws Err {
+    protected Formula k2pos(Formula f, Expr e) throws Err {
         if (k2pos_enabled)
             if (frame != null)
                 frame.k2pos(f, e);
         return f;
     }
 
-    private boolean k2pos_enabled = true;
+    protected boolean k2pos_enabled = true;
 
     /**
      * Returns the expression corresponding to the given sig.
      */
-    private Expression a2k(Sig x) throws Err {
+    protected Expression a2k(Sig x) throws Err {
         if (a2k != null)
             return a2k.get(x);
         else
@@ -205,7 +205,7 @@ public final class TranslateAlloyToKodkod extends VisitReturn<Object> {
     /**
      * Returns the expression corresponding to the given field.
      */
-    private Expression a2k(Field x) throws Err {
+    protected Expression a2k(Field x) throws Err {
         if (a2k != null)
             return a2k.get(x);
         else
@@ -289,7 +289,7 @@ public final class TranslateAlloyToKodkod extends VisitReturn<Object> {
     /**
      * Break up x into conjuncts then add them each as a fact.
      */
-    private void recursiveAddFormula(Expr x) throws Err {
+    protected void recursiveAddFormula(Expr x) throws Err {
         if (x instanceof ExprList && ((ExprList) x).op == ExprList.Op.AND) {
             for (Expr e : ((ExprList) x).args)
                 recursiveAddFormula(e);
@@ -637,7 +637,7 @@ public final class TranslateAlloyToKodkod extends VisitReturn<Object> {
      * @return the formula - if x evaluates to a Formula
      * @throws ErrorFatal - if x does not evaluate to a Formula
      */
-    private Formula cform(Expr x) throws Err {
+    protected Formula cform(Expr x) throws Err {
         if (!x.errors.isEmpty())
             throw x.errors.pick();
         Object y = visitThis(x);
@@ -653,7 +653,7 @@ public final class TranslateAlloyToKodkod extends VisitReturn<Object> {
      * @return the integer expression - if x evaluates to an IntExpression
      * @throws ErrorFatal - if x does not evaluate to an IntExpression
      */
-    private IntExpression cint(Expr x) throws Err {
+    protected IntExpression cint(Expr x) throws Err {
         if (!x.errors.isEmpty())
             throw x.errors.pick();
         return toInt(x, visitThis(x));
@@ -684,7 +684,7 @@ public final class TranslateAlloyToKodkod extends VisitReturn<Object> {
      * @return the expression - if x evaluates to an Expression
      * @throws ErrorFatal - if x does not evaluate to an Expression
      */
-    private Expression cset(Expr x) throws Err {
+    protected Expression cset(Expr x) throws Err {
         if (!x.errors.isEmpty())
             throw x.errors.pick();
         return toSet(x, visitThis(x));
@@ -827,6 +827,8 @@ public final class TranslateAlloyToKodkod extends VisitReturn<Object> {
             case LONEOF :
             case ONEOF :
             case SETOF :
+            // Quantitative extension: Drop behaves as id for ordinary relations.
+            case DROP:
                 return cset(x.sub);
             case NOOP :
                 return visitThis(x.sub);
@@ -1013,7 +1015,7 @@ public final class TranslateAlloyToKodkod extends VisitReturn<Object> {
         if (x.op == ExprList.Op.TOTALORDER) {
             Expression elem = cset(x.args.get(0)), first = cset(x.args.get(1)), next = cset(x.args.get(2));
             if (elem instanceof Relation && first instanceof Relation && next instanceof Relation) {
-                Relation lst = frame.addRel("", null, frame.query(true, elem, false));
+                Relation lst = frame.addRel("", null, frame.query(true, elem, false), false);
                 totalOrderPredicates.add((Relation) elem);
                 totalOrderPredicates.add((Relation) first);
                 totalOrderPredicates.add(lst);

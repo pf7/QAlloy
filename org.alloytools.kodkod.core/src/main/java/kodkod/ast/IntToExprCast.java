@@ -33,16 +33,21 @@ import kodkod.ast.visitor.VoidVisitor;
  * operator is INTCAST. Otherwise, the meaning is the set of powers of 2 that
  * make up the given integer expression.
  *
+ * Quantitative extension: arity is no longer 1 for every IntExpression.
+ * Instead, SumExpressions have their arity corresponding to the sum of
+ * its declarations' arity.
+ *
  * @specfield intExpr: IntExpression
  * @specfield op: IntCastOperator
  * @invariant children = 0->intExpr
- * @invariant arity = 1
+ * @invariant arity : int
  * @author Emina Torlak
  */
 public final class IntToExprCast extends Expression {
 
     private final IntExpression   intExpr;
     private final IntCastOperator op;
+    private final int arity;
 
     /**
      * Constructs a new IntToExprCast.
@@ -53,16 +58,23 @@ public final class IntToExprCast extends Expression {
     IntToExprCast(IntExpression intExpr, IntCastOperator op) {
         this.intExpr = intExpr;
         this.op = op;
+        int arity = 1;
+        if(intExpr instanceof SumExpression) {
+            arity = 0;
+            for (Decl d : ((SumExpression) intExpr).decls())
+                arity += d.variable().arity();
+        }
+        this.arity = arity;
     }
 
     /**
-     * Returns 1.
+     * Returns this.arity.
      *
-     * @return 1
+     * @return this.arity
      */
     @Override
     public int arity() {
-        return 1;
+        return this.arity;
     }
 
     /**

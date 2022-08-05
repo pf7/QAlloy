@@ -44,6 +44,11 @@ public final class Decl {
      */
     public final Pos                               disjoint2;
 
+    /**
+     * If nonnull, then this declaration defines a quantitative field.
+     */
+    public final Pos                               isInt;
+
     /** The list of names. */
     public final ConstList< ? extends ExprHasName> names;
 
@@ -71,12 +76,13 @@ public final class Decl {
     /**
      * This constructs a declaration; the list of names must not be empty.
      */
-    public Decl(Pos isPrivate, Pos disjoint, Pos disjoint2, List< ? extends ExprHasName> names, Expr expr) {
+    public Decl(Pos isPrivate, Pos disjoint, Pos disjoint2, Pos isInt, List< ? extends ExprHasName> names, Expr expr) {
         if (names.size() == 0)
             throw new NullPointerException();
         this.isPrivate = isPrivate;
         this.disjoint = (names.size() > 1 ? disjoint : null);
         this.disjoint2 = disjoint2;
+        this.isInt = isInt;
         this.names = ConstList.make(names);
         this.expr = expr;
     }

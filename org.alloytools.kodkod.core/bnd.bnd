@@ -20,7 +20,11 @@ Export-Package: \
 	kodkod.instance,\
 	kodkod.util.collections,\
 	kodkod.util.ints,\
-	kodkod.util.nodes
+	kodkod.util.nodes,\
+	kodkod.engine.num,\
+	kodkod.engine.fol2num,\
+	kodkod.engine.num2common,\
+	kodkod.engine.num2smt
 
 -buildpath: \
 	org.sat4j.core,\

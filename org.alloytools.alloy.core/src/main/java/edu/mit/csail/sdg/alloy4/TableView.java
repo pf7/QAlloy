@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import edu.mit.csail.sdg.translator.A4QtTuple;
 import org.alloytools.alloy.core.AlloyCore;
 import org.alloytools.util.table.Table;
 
@@ -251,6 +252,11 @@ public class TableView {
         for (int i = 0; i < a4t.arity(); i++) {
             SimAtom atom = SimAtom.make(a4t.atom(i));
             atoms.add(atom);
+        }
+        //Add tuple weight to the table if it exists
+        if(a4t instanceof A4QtTuple){
+            String weight = ((A4QtTuple)a4t).getWeight();
+            atoms.add(SimAtom.make(weight));
         }
         return SimTuple.make(atoms);
     }

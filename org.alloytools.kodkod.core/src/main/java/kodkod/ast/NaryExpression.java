@@ -62,6 +62,11 @@ public final class NaryExpression extends Expression implements Iterable<Express
         switch (op) {
             case UNION :
             case INTERSECTION :
+            case ADDITION:
+            case HADAMARD_PRODUCT:
+            case HADAMARD_DIVISION:
+            case LEFT_INTERSECTION:
+            case RIGHT_INTERSECTION:
             case OVERRIDE :
                 this.arity = children[0].arity();
                 for (int i = 1; i < children.length; i++) {

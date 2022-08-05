@@ -1004,7 +1004,9 @@ public final class VizGUI implements ComponentListener {
             try {
                 if (!f.exists())
                     throw new IOException("File " + xmlFileName + " does not exist.");
-                myInstance = StaticInstanceReader.parseInstance(f);
+                myInstance = quantitativeAnalysis ?
+                        QuantitativeInstanceReader.parseInstance(f) :
+                        StaticInstanceReader.parseInstance(f);
             } catch (Throwable e) {
                 xmlLoaded.remove(fileName);
                 xmlLoaded.remove(xmlFileName);
@@ -1529,5 +1531,20 @@ public final class VizGUI implements ComponentListener {
     // null; }
     // return wrapMe();
     // }
+
+    /*
+     * ========================================================= ================
+     * ===================
+     */
+
+    /* Specifies the current analysis context: quantitative(true) or qualitative(false) */
+    private boolean quantitativeAnalysis = false;
+
+    /**
+     * Sets the type of setting
+     */
+    public void setQuantitativeAnalysis(boolean quantitativeAnalysis){
+        this.quantitativeAnalysis = quantitativeAnalysis;
+    }
 
 }

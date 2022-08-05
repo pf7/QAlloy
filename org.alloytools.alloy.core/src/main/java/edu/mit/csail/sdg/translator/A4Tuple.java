@@ -24,7 +24,7 @@ import kodkod.instance.Tuple;
  * than by value.
  */
 
-public final class A4Tuple {
+public class A4Tuple {
 
     /** The Kodkod tuple. */
     private final Tuple      tuple;

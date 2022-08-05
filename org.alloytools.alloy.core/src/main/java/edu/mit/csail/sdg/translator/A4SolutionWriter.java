@@ -97,10 +97,10 @@ public final class A4SolutionWriter {
             // If not, then grow "type" until the tupleset is fully contained
             // inside "type"
             Expr sum = type.toExpr();
-            int lastSize = (-1);
+            double lastSize = (-1);
             while (true) {
-                A4TupleSet ts = (A4TupleSet) (sol.eval(expr.minus(sum)));
-                int n = ts.size();
+                A4TupleSet ts = (A4TupleSet) (!sol.isQuantitativeSolving() ? sol.eval(expr.minus(sum)) : (sol.eval(expr.drop().minus(sum.drop()))));
+                double n = ts.size();
                 if (n <= 0)
                     break;
                 if (lastSize > 0 && lastSize <= n)
@@ -120,6 +120,8 @@ public final class A4SolutionWriter {
                 out.print("   <tuple>");
                 for (int i = 0; i < t.arity(); i++)
                     Util.encodeXMLs(out, " <atom label=\"", t.atom(i), "\"/>");
+                // Quantitative extension: Write the quantity associated with the tuple, if applicable.
+                if(t instanceof A4QtTuple) Util.encodeXMLs(out, "<weight value=\"" + ((A4QtTuple)t).getWeight() + "\"/>\n");
                 out.print(" </tuple>\n");
             }
         }
@@ -178,7 +180,11 @@ public final class A4SolutionWriter {
             if (sol != null && x != Sig.UNIV && x != Sig.SIGINT && x != Sig.SEQIDX) {
                 ts = (sol.eval(x));
                 for (A4Tuple t : ts.minus(ts2))
-                    Util.encodeXMLs(out, "   <atom label=\"", t.atom(0), "\"/>\n");
+                    // Quantitative extension: Write the quantity associated with the tuple, if applicable.
+                    if (t instanceof A4QtTuple)
+                        Util.encodeXMLs(out, "   <atom label=\"", t.atom(0), "\" value=\"",  ((A4QtTuple) t).getWeight(), "\"/>\n");
+                    else Util.encodeXMLs(out, "   <atom label=\"", t.atom(0), "\"/>\n");
+
             }
         } catch (Throwable ex) {
             throw new ErrorFatal("Error evaluating sig " + x.label, ex);
@@ -255,6 +261,10 @@ public final class A4SolutionWriter {
         Util.encodeXML(out, originalFileName);
         if (sol == null)
             out.print("\" metamodel=\"yes");
+        else{
+            out.print("\" context=\"");
+            Util.encodeXML(out, sol.getOriginalAnalysisType());
+        }
         out.print("\">\n");
         writesig(Sig.UNIV);
         for (Sig s : sigs)

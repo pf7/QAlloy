@@ -35,6 +35,9 @@ import edu.mit.csail.sdg.alloy4.Pos;
 
 public final class ExprBadJoin extends Expr {
 
+    /** Kind of join being performed, either regular join or multijoin **/
+    public final ExprBinary.Op op;
+
     /** The left-hand-side expression. */
     public final Expr left;
 
@@ -58,7 +61,7 @@ public final class ExprBadJoin extends Expr {
     public void toString(StringBuilder out, int indent) {
         if (indent < 0) {
             left.toString(out, -1);
-            out.append('.');
+            out.append(this.op);
             right.toString(out, -1);
         } else {
             for (int i = 0; i < indent; i++) {
@@ -71,14 +74,18 @@ public final class ExprBadJoin extends Expr {
     }
 
     /** Constructs an ExprBadJoin node. */
-    private ExprBadJoin(Pos pos, Pos closingBracket, Expr left, Expr right, JoinableList<Err> errors) {
+    private ExprBadJoin(Pos pos, Pos closingBracket, ExprBinary.Op op, Expr left, Expr right, JoinableList<Err> errors) {
         super(pos, closingBracket, (left.ambiguous || right.ambiguous), EMPTY, 0, 0, errors);
+        this.op = op == ExprBinary.Op.MULTIJOIN ? ExprBinary.Op.MULTIJOIN : ExprBinary.Op.JOIN;
         this.left = left;
         this.right = right;
     }
 
-    /** Constructs an ExprBadJoin node. */
-    public static Expr make(Pos pos, Pos closingBracket, Expr left, Expr right) {
+    /** Constructs an ExprBadJoin node.
+     * The {@code op} specified must be either JOIN or MULTIJOIN,
+     * if a different op is provided, defaults to JOIN.
+     * */
+    public static Expr make(Pos pos, Pos closingBracket, ExprBinary.Op op, Expr left, Expr right) {
         JoinableList<Err> errors = left.errors.make(right.errors);
         if (errors.isEmpty()) {
             StringBuilder sb = new StringBuilder("This cannot be a legal relational join where\nleft hand side is ");
@@ -88,7 +95,7 @@ public final class ExprBadJoin extends Expr {
             sb.append(" (type = ").append(right.type).append(")\n");
             errors = errors.make(new ErrorType(pos, sb.toString()));
         }
-        return new ExprBadJoin(pos, closingBracket, left, right, errors);
+        return new ExprBadJoin(pos, closingBracket, op, left, right, errors);
     }
 
     /** {@inheritDoc} */

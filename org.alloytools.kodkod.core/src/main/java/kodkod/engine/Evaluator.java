@@ -51,7 +51,7 @@ import kodkod.instance.TupleSet;
  * @specfield instance: Instance
  * @author Emina Torlak
  */
-public final class Evaluator {
+public class Evaluator {
 
     private final Instance instance;
     private final Options  options;
@@ -149,7 +149,10 @@ public final class Evaluator {
      * @throws kodkod.engine.fol2sat.UnboundLeafException intExpr contains an
      *             undeclared variable or a relation not mapped by this.instance
      */
-    public int evaluate(IntExpression intExpr) {
+    // Quantitative extension: Generalization of the return type when evaluating
+    // IntExpressions.
+    //public int evaluate(IntExpression intExpr) {
+    public Object evaluate(IntExpression intExpr) {
         if (intExpr == null)
             throw new NullPointerException("intexpression");
         final Int sol = Translator.evaluate(intExpr, instance, options);

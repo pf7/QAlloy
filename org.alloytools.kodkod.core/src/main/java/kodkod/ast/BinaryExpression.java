@@ -52,8 +52,17 @@ public final class BinaryExpression extends Expression {
      */
     BinaryExpression(final Expression left, final ExprOperator op, final Expression right) {
         switch (op) {
+            case HADAMARD_PRODUCT: // TODO cardinality
+                this.arity = right.arity();
+                break;
             case UNION :
             case INTERSECTION :
+            case ADDITION:
+            case MINUS:
+            case LEFT_INTERSECTION:
+            case RIGHT_INTERSECTION:
+                //case HADAMARD_PRODUCT: TODO cardinality
+            case HADAMARD_DIVISION:
             case DIFFERENCE :
             case OVERRIDE :
                 this.arity = left.arity();
@@ -61,12 +70,25 @@ public final class BinaryExpression extends Expression {
                     throw new IllegalArgumentException("Incompatible arities: " + left + " and " + right);
                 break;
             case JOIN :
+            case MULTIJOIN:
                 this.arity = left.arity() + right.arity() - 2;
                 if (arity < 1)
                     throw new IllegalArgumentException("Incompatible arities: " + left + " and " + right);
                 break;
             case PRODUCT :
                 this.arity = left.arity() + right.arity();
+                break;
+            case DOMAIN:
+            case RANGE:
+                if(right.arity() != 1)
+                    throw new IllegalArgumentException("Right operand must have arity 1, but instead it has arity: " + right.arity());
+                this.arity = left.arity();
+                break;
+            case KHATRI_RAO:
+                this.arity = left.arity() + right.arity() - 1;
+                break;
+            case SCALAR:
+                this.arity = right.arity();
                 break;
             default :
                 throw new IllegalArgumentException("Not a binary operator: " + op);

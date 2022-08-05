@@ -29,9 +29,9 @@ import kodkod.engine.fol2sat.Translation;
  * @specfield formula: Formula // the formula being solved
  * @specfield bounds: Bounds // the bounds on the formula
  */
-public final class Statistics {
+public class Statistics {
 
-    private static final String NEW_LINE       = System.getProperty("line.separator");
+    protected static final String NEW_LINE       = System.getProperty("line.separator");
 
     private final int           vars, pVars, clauses;
     private final long          translation, solving;
@@ -42,7 +42,7 @@ public final class Statistics {
     /**
      * Constructs a new Statistics object using the provided values.
      */
-    Statistics(int primaryVariables, int variables, int clauses, long translationTime, long solvingTime) {
+    public Statistics(int primaryVariables, int variables, int clauses, long translationTime, long solvingTime) {
         this.pVars = primaryVariables;
         this.vars = variables;
         this.clauses = clauses;

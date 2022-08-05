@@ -150,6 +150,7 @@ public final class ExprCall extends Expr {
             Type b = x.right.accept(this);
             switch (x.op) {
                 case JOIN :
+                case MULTIJOIN:
                     return a.join(b);
                 case DOMAIN :
                     return b.domainRestrict(a);
@@ -189,6 +190,7 @@ public final class ExprCall extends Expr {
                 case SETOF :
                 case SOMEOF :
                 case EXACTLYOF :
+                case DROP:
                     return t;
                 case CARDINALITY :
                 case CAST2INT :

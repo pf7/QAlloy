@@ -21,17 +21,15 @@
  */
 package kodkod.engine.fol2sat;
 
+import static kodkod.engine.bool.BooleanConstant.FALSE;
+import static kodkod.engine.bool.BooleanConstant.TRUE;
 import static kodkod.engine.fol2sat.FormulaFlattener.flatten;
 import static kodkod.engine.fol2sat.Skolemizer.skolemize;
 import static kodkod.util.collections.Containers.setDifference;
 import static kodkod.util.nodes.AnnotatedNode.annotate;
 import static kodkod.util.nodes.AnnotatedNode.annotateRoots;
 
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import kodkod.ast.Expression;
 import kodkod.ast.Formula;
@@ -49,9 +47,15 @@ import kodkod.engine.bool.BooleanValue;
 import kodkod.engine.bool.Int;
 import kodkod.engine.bool.Operator;
 import kodkod.engine.config.Options;
+import kodkod.engine.config.QuantitativeOptions;
+import kodkod.engine.fol2num.*;
 import kodkod.engine.hol.HOLTranslation;
 import kodkod.engine.hol.HOLTranslator;
 import kodkod.engine.hol.Proc;
+import kodkod.engine.num.NumericMatrix;
+import kodkod.engine.num2common.DivisionDetector;
+import kodkod.engine.num2common.QuantitativeTranslation;
+import kodkod.engine.num2smt.*;
 import kodkod.engine.satlab.SATSolver;
 import kodkod.instance.Bounds;
 import kodkod.instance.Instance;
@@ -64,6 +68,9 @@ import kodkod.util.nodes.AnnotatedNode;
  * Translates, evaluates, and approximates {@link Node nodes} with respect to
  * given {@link Bounds bounds} (or {@link Instance instances}) and
  * {@link Options}.
+ * -----------------------------------------------------------------------------
+ * Quantitative extension: Support evaluation and translation over quantitative
+ * problems.
  *
  * @author Emina Torlak
  */
@@ -112,6 +119,14 @@ public final class Translator {
     }
 
     /**
+     * Quantitative extension of {@link Translator#evaluate(Formula, Instance, Options)}
+     */
+    public static BooleanConstant evaluate(Formula formula, Instance instance, QuantitativeOptions options) {
+        final kodkod.engine.fol2num.LeafInterpreter interpreter = kodkod.engine.fol2num.LeafInterpreter.exact(instance, options);
+        return (BooleanConstant) FOL2NumTranslator.simpleTranslate(annotate(formula), interpreter);
+    }
+
+    /**
      * Evaluates the given expression to a BooleanMatrix using the provided instance
      * and options.
      *
@@ -126,6 +141,13 @@ public final class Translator {
      */
     public static BooleanMatrix evaluate(Expression expression, Instance instance, Options options) {
         return (BooleanMatrix) FOL2BoolTranslator.translate(annotate(expression), LeafInterpreter.exact(instance, options));
+    }
+
+    /**
+     * Quantitative extension of {@link Translator#evaluate(Expression, Instance, Options)}
+     */
+    public static NumericMatrix evaluate(Expression expression, Instance instance, QuantitativeOptions options) {
+        return (NumericMatrix) FOL2NumTranslator.simpleTranslate(annotate(expression), kodkod.engine.fol2num.LeafInterpreter.exact(instance, options));
     }
 
     /**
@@ -152,6 +174,14 @@ public final class Translator {
         // overflow = true;
         // ret.setOverflowFlag(overflow);
         return ret;
+    }
+
+    /**
+     * Quantitative extension of {@link Translator#evaluate(IntExpression, Instance, Options)}
+     */
+    public static NumericMatrix evaluate(IntExpression intExpr, Instance instance, QuantitativeOptions options) {
+        kodkod.engine.fol2num.LeafInterpreter interpreter = kodkod.engine.fol2num.LeafInterpreter.exact(instance, options);
+        return (NumericMatrix) FOL2NumTranslator.simpleTranslate(annotate(intExpr), interpreter);
     }
 
     public static <T extends Translation> T translateNext(T transl) {
@@ -183,6 +213,13 @@ public final class Translator {
      */
     public static Translation.Whole translate(Formula formula, Bounds bounds, Options options) {
         return (Translation.Whole) (new Translator(formula, bounds, options)).translate();
+    }
+
+    /**
+     * Translates the given formula using the specified bounds and quantitative options.
+     */
+    public static QuantitativeTranslation translate(Formula formula, Bounds bounds, QuantitativeOptions options) {
+        return (QuantitativeTranslation) (new Translator(formula, bounds, new Options())).translate(options);
     }
 
     /**
@@ -360,7 +397,7 @@ public final class Translator {
             // false incremental translation.
             transl.incrementer().solver().free();
             return new Translation.Incremental(tBounds, tOptions, transl.symmetries(), LeafInterpreter.empty(tBounds.universe(), tOptions), Bool2CNFTranslator.translateIncremental(BooleanConstant.FALSE, tOptions.solver()));
-        } else if (circuit == BooleanConstant.TRUE) {
+        } else if (circuit == TRUE) {
             // must add any newly allocated primary variables to the solver for
             // interpretation to work correctly
             final int maxVar = interpreter.factory().maxVariable();
@@ -551,6 +588,36 @@ public final class Translator {
         // CNF.
         AnnotatedNode<Formula> optimized = optimizeFormulaAndBounds(annotated, breaker);
         return toBoolean(optimized, breaker);
+    }
+
+    /**
+     * Translates this.originalFormula with respect to this.bounds and this.options.
+     * The output is a {@linkplain QuantitativeTranslation translation} which in turn
+     * is a {@linkplain SmtTranslation}.
+     *
+     * @return a {@linkplain Translation} whose solver is either a
+     *         SMTSolver instance initialized with the SMT-LIB model
+     *         derived from the given formula, with respect to the given bounds.
+     * @throws UnboundLeafException this.originalFormula refers to an undeclared
+     *             variable or a relation not mapped by this.bounds.
+     * @throws HigherOrderDeclException this.originalFormula contains a higher order
+     *             declaration that cannot be skolemized, or it can be skolemized
+     *             but this.options.skolemDepth < 0
+     */
+    private Translation translate(QuantitativeOptions options) {
+        final AnnotatedNode<Formula> annotated = logging ? annotateRoots(originalFormula) : annotate(originalFormula);
+
+        /*if (!incremental) {
+            bounds.relations().retainAll(annotated.relations());
+            if (!annotated.usesInts())
+                bounds.ints().clear();
+        }*/
+
+        /*final SymmetryBreaker breaker = new SymmetryBreaker(bounds, annotated, this.options.reporter());
+        AnnotatedNode<Formula> optimized = optimizeFormulaAndBounds(annotated, breaker); //TODO
+        return toNumeric(optimized, options);*/
+
+        return toNumeric(annotated, options);
     }
 
     /**
@@ -776,6 +843,36 @@ public final class Translator {
     }
 
     /**
+     * Translates the given annotated formula to its respective quantitative representation within the context at hand.
+     * @return the translation of annotated.node with respect to this.bounds
+     */
+    private Translation toNumeric(AnnotatedNode<Formula> annotated, QuantitativeOptions options) {
+        final kodkod.engine.fol2num.LeafInterpreter interpreter = kodkod.engine.fol2num.LeafInterpreter.exact(bounds, options, options.incremental());
+
+        Collection<BooleanValue> formula = FOL2NumTranslator.translate(annotated, interpreter);
+
+        //Trivially false
+        if(formula.contains(FALSE))
+            return QuantitativeTranslation.smtTranslation(completeBounds(), options, Num2smtTranslator.translate(FALSE), Collections.EMPTY_MAP, 0, null);
+
+        //Remove all sub-formulas that are trivially true
+        formula.removeAll(Collections.singletonList(TRUE));
+
+        //Trivially true
+        if(formula.size() == 0)
+            return QuantitativeTranslation.smtTranslation(completeBounds(), options, Num2smtTranslator.translate(TRUE), Collections.EMPTY_MAP, 0, null);
+
+        Collection<BooleanFormula> problem = (Collection)formula;
+
+        // Handle division by zero
+        DivisionDetector detector = DivisionDetector.detectDivision(interpreter.factory(), problem);
+        if(detector.hasDivision())
+            formula.add(detector.divisionByZero().negation());
+
+        return toSMT(problem, interpreter, options, null); // options.solver() in { CVC4, Z3, MathSAT, Yices }
+    }
+
+    /**
      * Translates the given circuit to CNF, adds the clauses to a SATSolver returned
      * by options.solver(), and returns a Translation object constructed from the
      * solver and the provided arguments.
@@ -809,6 +906,33 @@ public final class Translator {
             final SATSolver cnf = Bool2CNFTranslator.translate(circuit, maxPrimaryVar, options.solver());
             return new Translation.Whole(completeBounds(), options, cnf, varUsage, maxPrimaryVar, log);
         }
+    }
+
+    /**
+     * Translates the given integer problem to SMT, adding the assertions to a SMT Solver returned
+     * by options.solver(), and returns a Translation object constructed from the
+     * solver and the provided arguments.
+     */
+    private Translation toSMT(Collection<BooleanFormula> problem, kodkod.engine.fol2num.LeafInterpreter interpreter, QuantitativeOptions options, TranslationLog log) {
+        final int maxPrimaryVar = interpreter.factory().maxVariable();
+        options.setMaxPrimaryVariable(maxPrimaryVar);
+
+        final Map<Relation, IntSet> varUsage = interpreter.vars();
+        interpreter = null; // enable gc
+
+        SMTSolver solver;
+        switch (options.solver()){
+            case CVC4:
+            case Z3:
+            case MathSAT:
+            case Yices:
+                solver = Num2smtTranslator.translate(problem, options);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported solver " + options.solver() + " for the current analysis context.");
+        }
+
+        return QuantitativeTranslation.smtTranslation(completeBounds(), options, solver, varUsage, maxPrimaryVar, log);
     }
 
     /**

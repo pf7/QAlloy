@@ -34,7 +34,7 @@ import edu.mit.csail.sdg.translator.A4Solution;
  * <b>Thread Safety:</b> Can be called only by the AWT event thread.
  */
 
-public final class AlloyInstance {
+public class AlloyInstance {
 
     /** The original A4Solution object. */
     final A4Solution originalA4;					// FIXTHIS:

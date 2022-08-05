@@ -181,7 +181,9 @@ public final class ExprUnary extends Expr {
                     /** integer-to-IntAtom */
                     CAST2SIGINT("int->Int"),
                     /** No-Operation */
-                    NOOP("NOOP");
+                    NOOP("NOOP"),
+                    /** drop */
+                    DROP("drop");
 
         /** The constructor */
         private Op(String label) {
@@ -314,7 +316,8 @@ public final class ExprUnary extends Expr {
                             type = Type.make2(UNIV);
                         break;
                     case CARDINALITY :
-                        type = Type.smallIntType();
+                        // Quantitative Extension: Cardinality now assumes the type of the enclosing expression
+                        type = sub.typecheck_as_set().type;
                         break;
                     case CAST2INT :
                         if (!sub.type.hasArity(1))
@@ -323,6 +326,8 @@ public final class ExprUnary extends Expr {
                         break;
                     case CAST2SIGINT :
                         type = SIGINT.type;
+                        break;
+                    case DROP:
                         break;
                 }
             return new ExprUnary(pos, this, sub, type, extraWeight + sub.weight, errors.make(extraError));

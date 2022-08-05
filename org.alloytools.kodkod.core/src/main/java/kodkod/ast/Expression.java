@@ -23,17 +23,8 @@ package kodkod.ast;
 
 import static kodkod.ast.operator.ExprCastOperator.CARDINALITY;
 import static kodkod.ast.operator.ExprCastOperator.SUM;
-import static kodkod.ast.operator.ExprCompOperator.EQUALS;
-import static kodkod.ast.operator.ExprCompOperator.SUBSET;
-import static kodkod.ast.operator.ExprOperator.CLOSURE;
-import static kodkod.ast.operator.ExprOperator.DIFFERENCE;
-import static kodkod.ast.operator.ExprOperator.INTERSECTION;
-import static kodkod.ast.operator.ExprOperator.JOIN;
-import static kodkod.ast.operator.ExprOperator.OVERRIDE;
-import static kodkod.ast.operator.ExprOperator.PRODUCT;
-import static kodkod.ast.operator.ExprOperator.REFLEXIVE_CLOSURE;
-import static kodkod.ast.operator.ExprOperator.TRANSPOSE;
-import static kodkod.ast.operator.ExprOperator.UNION;
+import static kodkod.ast.operator.ExprCompOperator.*;
+import static kodkod.ast.operator.ExprOperator.*;
 import static kodkod.ast.operator.Multiplicity.LONE;
 import static kodkod.ast.operator.Multiplicity.NO;
 import static kodkod.ast.operator.Multiplicity.ONE;
@@ -43,10 +34,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 
-import kodkod.ast.operator.ExprCastOperator;
-import kodkod.ast.operator.ExprCompOperator;
-import kodkod.ast.operator.ExprOperator;
-import kodkod.ast.operator.Multiplicity;
+import kodkod.ast.operator.*;
 import kodkod.ast.visitor.ReturnVisitor;
 import kodkod.util.collections.Containers;
 
@@ -99,6 +87,16 @@ public abstract class Expression extends Node {
     }
 
     /**
+     * Returns the join of this and the specified expression. The effect of this
+     * method is the same as calling this.compose(MULTIJOIN, expr).
+     *
+     * @return this.compose(MULTIJOIN, expr)
+     */
+    public final Expression multijoin(Expression expr) {
+        return compose(MULTIJOIN, expr);
+    }
+
+    /**
      * Returns the product of this and the specified expression. The effect of this
      * method is the same as calling this.compose(PRODUCT, expr).
      *
@@ -119,6 +117,66 @@ public abstract class Expression extends Node {
     }
 
     /**
+     * Returns the pointwise addition of this and the specified expression. The effect of this
+     * method is the same as calling this.compose(ADDITION, expr).
+     *
+     * @return this.compose(ADDITION, expr)
+     */
+    public final Expression addition(Expression expr) {
+        return compose(ADDITION, expr);
+    }
+
+    /**
+     * Returns the maximum union of this and the specified expression. The effect of this
+     * method is the same as calling this.compose(MINUS, expr).
+     *
+     * @return this.compose(MINUS, expr)
+     */
+    public final Expression minus(Expression expr) {
+        return compose(MINUS, expr);
+    }
+
+    /**
+     * Returns the Hadamard product of this and the specified expression. The effect of this
+     * method is the same as calling this.compose(HADAMARD_PRODUCT, expr).
+     *
+     * @return this.compose(HADAMARD_PRODUCT, expr)
+     */
+    public final Expression hadamardProduct(Expression expr) {
+        return compose(HADAMARD_PRODUCT, expr);
+    }
+
+    /**
+     * Returns the scalar multiplication of this and the specified expression. The effect of this
+     * method is the same as calling this.compose(SCALAR, expr).
+     *
+     * @return this.compose(SCALAR, expr)
+     */
+    public final Expression scalar(Expression constant) {
+        return compose(SCALAR, constant);
+    }
+
+    /**
+     * Returns the Hadamard division of this and the specified expression. The effect of this
+     * method is the same as calling this.compose(HADAMARD_DIVISION, expr).
+     *
+     * @return this.compose(HADAMARD_DIVISION, expr)
+     */
+    public final Expression hadamardDivision(Expression expr) {
+        return compose(HADAMARD_DIVISION, expr);
+    }
+
+    /**
+     * Returns the Khatri-Rao product of this and the specified expression. The effect of this
+     * method is the same as calling this.compose(KHATRI_RAO, expr).
+     *
+     * @return this.compose(KHATRI_RAO, expr)
+     */
+    public final Expression khatriRao(Expression expr) {
+        return compose(KHATRI_RAO, expr);
+    }
+
+    /**
      * Returns the difference of this and the specified expression. The effect of
      * this method is the same as calling this.compose(DIFFERENCE, expr).
      *
@@ -136,6 +194,46 @@ public abstract class Expression extends Node {
      */
     public final Expression intersection(Expression expr) {
         return compose(INTERSECTION, expr);
+    }
+
+    /**
+     * Returns the leftmost intersection of this and the specified expression. The effect of
+     * this method is the same as calling this.compose(LEFT_INTERSECTION, expr).
+     *
+     * @return this.compose(LEFT_INTERSECTION, expr)
+     */
+    public final Expression leftIntersection(Expression expr) {
+        return compose(LEFT_INTERSECTION, expr);
+    }
+
+    /**
+     * Returns the rightmost intersection of this and the specified expression. The effect of
+     * this method is the same as calling this.compose(RIGHT_INTERSECTION, expr).
+     *
+     * @return this.compose(RIGHT_INTERSECTION, expr)
+     */
+    public final Expression rightIntersection(Expression expr) {
+        return compose(RIGHT_INTERSECTION, expr);
+    }
+
+    /**
+     * Returns the this with the same domain as the specified expression. The effect of
+     * this method is the same as calling this.compose(DOMAIN, expr).
+     *
+     * @return this.compose(DOMAIN, expr)
+     */
+    public final Expression domain(Expression expr) {
+        return compose(DOMAIN, expr);
+    }
+
+    /**
+     * Returns the this with the same range as the specified expression. The effect of
+     * this method is the same as calling this.compose(RANGE, expr).
+     *
+     * @return this.compose(RANGE, expr)
+     */
+    public final Expression range(Expression expr) {
+        return compose(RANGE, expr);
     }
 
     /**
@@ -240,6 +338,106 @@ public abstract class Expression extends Node {
     }
 
     /**
+     * Returns the maximum union of the given expressions. The effect of this method is
+     * the same as calling compose(ADDITION, exprs).
+     *
+     * @return compose(ADDITION, exprs)
+     */
+    public static Expression addition(Expression... exprs) {
+        return compose(ADDITION, exprs);
+    }
+
+    /**
+     * Returns the maximum union of the given expressions. The effect of this method is
+     * the same as calling compose(ADDITION, exprs).
+     *
+     * @return compose(ADDITION, exprs)
+     */
+    public static Expression addition(Collection< ? extends Expression> exprs) {
+        return compose(ADDITION, exprs);
+    }
+
+    /**
+     * Returns the leftmost intersection of the given expressions. The effect of this method is
+     * the same as calling compose(LEFT_INTERSECTION, exprs).
+     *
+     * @return compose(LEFT_INTERSECTION, exprs)
+     */
+    public static Expression leftIntersection(Expression... exprs) {
+        return compose(LEFT_INTERSECTION, exprs);
+    }
+
+    /**
+     * Returns the leftmost intersection of the given expressions. The effect of this method is
+     * the same as calling compose(LEFT_INTERSECTION, exprs).
+     *
+     * @return compose(LEFT_INTERSECTION, exprs)
+     */
+    public static Expression leftIntersection(Collection< ? extends Expression> exprs) {
+        return compose(LEFT_INTERSECTION, exprs);
+    }
+
+    /**
+     * Returns the rightmost intersection of the given expressions. The effect of this method is
+     * the same as calling compose(RIGHT_INTERSECTION, exprs).
+     *
+     * @return compose(RIGHT_INTERSECTION, exprs)
+     */
+    public static Expression rightIntersection(Expression... exprs) {
+        return compose(RIGHT_INTERSECTION, exprs);
+    }
+
+    /**
+     * Returns the rightmost intersection of the given expressions. The effect of this method is
+     * the same as calling compose(RIGHT_INTERSECTION, exprs).
+     *
+     * @return compose(RIGHT_INTERSECTION, exprs)
+     */
+    public static Expression rightIntersection(Collection< ? extends Expression> exprs) {
+        return compose(RIGHT_INTERSECTION, exprs);
+    }
+
+    /**
+     * Returns the Hadamard product of the given expressions. The effect of this method is
+     * the same as calling compose(HADAMARD_PRODUCT, exprs).
+     *
+     * @return compose(HADAMARD_PRODUCT, exprs)
+     */
+    public static Expression hadamardProduct(Expression... exprs) {
+        return compose(HADAMARD_PRODUCT, exprs);
+    }
+
+    /**
+     * Returns the Hadamard product of the given expressions. The effect of this method is
+     * the same as calling compose(HADAMARD_PRODUCT, exprs).
+     *
+     * @return compose(HADAMARD_PRODUCT, exprs)
+     */
+    public static Expression hadamardProduct(Collection< ? extends Expression> exprs) {
+        return compose(HADAMARD_PRODUCT, exprs);
+    }
+
+    /**
+     * Returns the Hadamard division of the given expressions. The effect of this method is
+     * the same as calling compose(HADAMARD_DIVISION, exprs).
+     *
+     * @return compose(HADAMARD_DIVISION, exprs)
+     */
+    public static Expression hadamardDivision(Expression... exprs) {
+        return compose(HADAMARD_DIVISION, exprs);
+    }
+
+    /**
+     * Returns the Hadamard division of the given expressions. The effect of this method is
+     * the same as calling compose(HADAMARD_DIVISION, exprs).
+     *
+     * @return compose(HADAMARD_DIVISION, exprs)
+     */
+    public static Expression hadamardDivision(Collection< ? extends Expression> exprs) {
+        return compose(HADAMARD_DIVISION, exprs);
+    }
+
+    /**
      * Returns the composition of the given expressions using the given operator.
      *
      * @requires exprs.length = 2 => op.binary(), exprs.length > 2 => op.nary()
@@ -288,6 +486,16 @@ public abstract class Expression extends Node {
      */
     public final Expression transpose() {
         return apply(TRANSPOSE);
+    }
+
+    /**
+     * Returns the drop of this. The effect of this method is the same as
+     * calling this.apply(DROP).
+     *
+     * @return this.apply(DROP)
+     */
+    public final Expression drop(){
+        return apply(DROP);
     }
 
     /**
@@ -381,6 +589,46 @@ public abstract class Expression extends Node {
      */
     public final Formula in(Expression expr) {
         return compare(SUBSET, expr);
+    }
+
+    /**
+     * Returns the formula 'this < expr'. The effect of this method is the same as
+     * calling this.compare(LT, expr).
+     *
+     * @return this.compare(LT, expr)
+     */
+    public final Formula lt(Expression expr){
+        return compare(LT, expr);
+    }
+
+    /**
+     * Returns the formula 'this > expr'. The effect of this method is the same as
+     * calling this.compare(GT, expr).
+     *
+     * @return this.compare(GT, expr)
+     */
+    public final Formula gt(Expression expr){
+        return compare(GT, expr);
+    }
+
+    /**
+     * Returns the formula 'this <= expr'. The effect of this method is the same as
+     * calling this.compare(LTE, expr).
+     *
+     * @return this.compare(LTE, expr)
+     */
+    public final Formula lte(Expression expr){
+        return compare(LTE, expr);
+    }
+
+    /**
+     * Returns the formula 'this >= expr'. The effect of this method is the same as
+     * calling this.compare(GTE, expr).
+     *
+     * @return this.compare(GTE, expr)
+     */
+    public final Formula gte(Expression expr){
+        return compare(GTE, expr);
     }
 
     /**

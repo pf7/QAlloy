@@ -71,7 +71,7 @@ public final class ITEGate extends BooleanFormula {
      * @return a hash of this.label
      */
     @Override
-    int hash(Operator op) {
+    public int hash(Operator op) {
         return labelhash;
     }
 

@@ -202,11 +202,11 @@ public final class ExprQt extends Expr {
          * @param sub - the body of the expression
          */
         public final Expr make(Pos pos, Pos closingBracket, List<Decl> decls, Expr sub) {
-            Type t = this == SUM ? Type.smallIntType() : (this == COMPREHENSION ? Type.EMPTY : Type.FORMULA);
+            Type t = this == SUM ? EMPTY : (this == COMPREHENSION ? Type.EMPTY : Type.FORMULA);
             if (this != SUM)
                 sub = sub.typecheck_as_formula();
             else
-                sub = sub.typecheck_as_int();
+                sub = sub.typecheck_as_set();
             boolean ambiguous = sub.ambiguous;
             JoinableList<Err> errs = emptyListOfErrors;
             if (sub.mult != 0)
@@ -244,14 +244,14 @@ public final class ExprQt extends Expr {
                     else if (op == ExprUnary.Op.LONEOF)
                         errs = errs.make(new ErrorType(v.span(), "This cannot be a lone-of expression."));
                 }
-                if (this == COMPREHENSION) {
+                //if (this == COMPREHENSION) { // Quantitative extension: SUM type is now set
                     Type t1 = v.type.extract(1);
                     for (int n = d.names.size(); n > 0; n--)
                         if (t == EMPTY)
                             t = t1;
                         else
                             t = t.product(t1);
-                }
+                //}
             }
             if (errs.isEmpty())
                 errs = sub.errors; // if the vars have errors, then the
@@ -316,7 +316,7 @@ public final class ExprQt extends Expr {
                 continue;
             }
             guard = ExprList.makeDISJOINT(d.disjoint, null, d.names).and(guard);
-            newdecls.add(new Decl(null, null, null, d.names, d.expr));
+            newdecls.add(new Decl(null, null, null, null, d.names, d.expr));
         }
         if (guard == null)
             return this;

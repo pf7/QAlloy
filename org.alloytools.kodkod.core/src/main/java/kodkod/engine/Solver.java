@@ -21,17 +21,22 @@
  */
 package kodkod.engine;
 
-import java.util.Iterator;
+import java.util.*;
 
 import kodkod.ast.Formula;
 import kodkod.ast.IntExpression;
 import kodkod.ast.Relation;
 import kodkod.engine.config.Options;
+import kodkod.engine.config.QuantitativeOptions;
 import kodkod.engine.fol2sat.HigherOrderDeclException;
 import kodkod.engine.fol2sat.Translation;
 import kodkod.engine.fol2sat.TranslationLog;
 import kodkod.engine.fol2sat.Translator;
 import kodkod.engine.fol2sat.UnboundLeafException;
+import kodkod.engine.num2common.QuantitativeSolver;
+import kodkod.engine.num2common.QuantitativeTranslation;
+import kodkod.engine.num2smt.SMTSolver;
+import kodkod.engine.num2smt.SMTStatistics;
 import kodkod.engine.satlab.SATAbortedException;
 import kodkod.engine.satlab.SATProver;
 import kodkod.engine.satlab.SATSolver;
@@ -59,6 +64,11 @@ import kodkod.instance.Instance;
  *
  * @specfield options: Options
  * @author Emina Torlak
+ *
+ * -----------------------------------------------------------------------------
+ * Quantitative extension: Added solve and satisfiability methods for
+ * quantitative problems.
+ *
  */
 public final class Solver implements KodkodSolver {
 
@@ -156,6 +166,47 @@ public final class Solver implements KodkodSolver {
     }
 
     /**
+     * Quantitative analysis of a given {@link Formula formula} with respect to the specified
+     * {@link QuantitativeOptions options} and
+     * {@link Bounds bounds} in a integer setting.
+     *
+     * @return Solution containing an Instance in case SAT was the response obtained.
+     */
+    public Solution solve(Formula formula, Bounds bounds, QuantitativeOptions options) throws HigherOrderDeclException, UnboundLeafException, AbortedException {
+        final long startTransl = System.currentTimeMillis();
+
+        final QuantitativeTranslation translation = Translator.translate(formula, bounds, options.clone());
+        final long endTransl = System.currentTimeMillis();
+
+        if (translation.trivial())
+            return trivial(translation, endTransl - startTransl);
+
+        final QuantitativeSolver solver = translation.solver();
+
+        final long startSolve = System.currentTimeMillis();
+        final boolean isSat = solver.solve();
+        final long endSolve = System.currentTimeMillis();
+
+        final Statistics stats;
+        boolean isUnknown = false;
+        switch(options.solver()){
+            case CVC4:
+            case Z3:
+            case MathSAT:
+            case Yices:
+                stats = new SMTStatistics(translation, endTransl - startTransl, endSolve - startSolve);
+                isUnknown = ((SMTSolver)solver).getResult().isUnknown();
+                break;
+            default:
+                stats = new Statistics(translation, endTransl - startTransl, endSolve - startSolve);
+                break;
+        }
+        return isSat ? sat(translation, stats) :
+                (isUnknown ? unknown((QuantitativeTranslation.SmtTranslation)translation, (SMTStatistics)stats) :
+                             unsat(translation, stats));
+    }
+
+    /**
      * Attempts to find all solutions to the given formula with respect to the
      * specified bounds or to prove the formula's unsatisfiability. If the operation
      * is successful, the method returns an iterator over n Solution objects. The
@@ -189,6 +240,17 @@ public final class Solver implements KodkodSolver {
         if (!options.solver().incremental())
             throw new IllegalArgumentException("cannot enumerate solutions without an incremental solver.");
         return new SolutionIterator(formula, bounds, options);
+    }
+
+    /**
+     * Quantitative analysis of all possible solutions for a given {@link Formula formula}
+     * {@link QuantitativeOptions options} and
+     * with respect to the specified {@link Bounds bounds} in an integer setting.
+     *
+     * @return an iterator over every solution of this formula wrt the bounds specified
+     */
+    public Iterator<Solution> solveAll(final Formula formula, final Bounds bounds, QuantitativeOptions options) throws HigherOrderDeclException, UnboundLeafException, AbortedException {
+        return new QTSolutionIterator(formula, bounds, options.clone());
     }
 
     // //[AM]
@@ -230,6 +292,16 @@ public final class Solver implements KodkodSolver {
     }
 
     /**
+     * Returns the result of solving a sat formula taking advantage of a SMT solver.
+     * @param translation the translation
+     * @param stats translation / solving stats
+     * @return the result of solving a sat formula.
+     */
+    private static Solution sat(QuantitativeTranslation translation, Statistics stats) {
+        return Solution.satisfiable(stats, translation.interpret());
+    }
+
+    /**
      * Returns the result of solving an unsat formula.
      *
      * @param translation the translation
@@ -246,6 +318,29 @@ public final class Solver implements KodkodSolver {
             cnf.free();
             return sol;
         }
+    }
+
+    /**
+     * Returns the result of solving an unsat formula taking advantage of a SMT solver .
+     *
+     * @param translation the translation
+     * @param stats translation / solving stats
+     * @return the result of solving an unsat formula.
+     */
+    static Solution unsat(QuantitativeTranslation translation, Statistics stats) {
+        return Solution.unsatisfiable(stats, null);
+    }
+
+    /**
+     * Returns the result of solving a formula taking advantage of a SMT solver,
+     * which terminates and responds UNKNOWN.
+     *
+     * @param translation the SMT translation
+     * @param stats translation / solving stats
+     * @return the result of arriving at an unknown response.
+     */
+    static Solution unknown(QuantitativeTranslation.SmtTranslation translation, SMTStatistics stats) {
+        return Solution.unknown(stats);
     }
 
     /**
@@ -266,6 +361,26 @@ public final class Solver implements KodkodSolver {
             sol = Solution.triviallyUnsatisfiable(stats, trivialProof(translation.log()));
         }
         translation.cnf().free();
+        return sol;
+    }
+
+    /**
+     * Returns the result of solving a trivially (un)sat formula from the numeric perspective.
+     *
+     * @param translation trivial translation produced as the result of
+     *            {@code translation.formula} simplifying to a constant with respect
+     *            to {@code translation.bounds}
+     * @param translTime translation time
+     * @return the result of solving a trivially (un)sat formula.
+     */
+    static Solution trivial(QuantitativeTranslation translation, long translTime) {
+        final Statistics stats = new Statistics(0, 0, 0, translTime, 0);
+        final Solution sol;
+        if (translation.solver().solve()) {
+            sol = Solution.triviallySatisfiable(stats, translation.interpret());
+        } else {
+            sol = Solution.triviallyUnsatisfiable(stats, null); //TODO: Proof / UNSAT Core
+        }
         return sol;
     }
 

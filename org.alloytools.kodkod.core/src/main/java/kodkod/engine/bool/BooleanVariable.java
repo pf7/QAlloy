@@ -44,7 +44,7 @@ public final class BooleanVariable extends BooleanFormula {
      * @requires label != 0
      * @ensures this.label' = label
      */
-    BooleanVariable(int label) {
+    public BooleanVariable(int label) {
         super(null);
         assert label != 0;
         this.label = label;
@@ -57,7 +57,7 @@ public final class BooleanVariable extends BooleanFormula {
      * @return Ints.superFastHash(this.label)
      */
     @Override
-    int hash(Operator op) {
+    public int hash(Operator op) {
         return hashcode;
     }
 
@@ -78,7 +78,7 @@ public final class BooleanVariable extends BooleanFormula {
      */
     @Override
     public String toString() {
-        return Integer.toString(label);
+        return "VAR" + label; //Integer.toString(label);
     }
 
     /**

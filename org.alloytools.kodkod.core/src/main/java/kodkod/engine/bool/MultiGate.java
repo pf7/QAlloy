@@ -130,7 +130,7 @@ public abstract class MultiGate extends BooleanFormula {
      *         Ints.superFastHash(this.label)
      */
     @Override
-    final int hash(Operator op) {
+    public final int hash(Operator op) {
         return op == this.op ? hashcode : labelhash;
     }
 }

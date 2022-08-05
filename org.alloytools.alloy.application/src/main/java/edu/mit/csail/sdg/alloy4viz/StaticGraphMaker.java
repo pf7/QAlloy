@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.JPanel;
 
@@ -124,7 +126,9 @@ public final class StaticGraphMaker {
         final Map<AlloyRelation,Integer> rels = new TreeMap<AlloyRelation,Integer>();
         this.graph = graph;
         this.view = view;
-        instance = StaticProjector.project(originalInstance, proj);
+        instance = !(originalInstance instanceof AlloyQuantitativeInstance) ?
+                StaticProjector.project(originalInstance, proj) :
+                QuantitativeProjector.project(originalInstance, proj);
         model = instance.model;
         for (AlloyRelation rel : model.getRelations()) {
             rels.put(rel, null);
@@ -205,6 +209,11 @@ public final class StaticGraphMaker {
         boolean showLabelByDefault = view.showAsLabel.get(null);
         for (AlloySet set : instance.atom2sets(atom)) {
             String x = view.label.get(set);
+            // Quantitative Subset Sig
+            if(instance instanceof AlloyQuantitativeInstance && ((AlloyQuantitativeInstance) instance).isQuantitative(atom, x)){
+                x = x + " : " + formatNumber(((AlloyQuantitativeInstance) instance).getWeight(atom, x));
+                x = x.replace("this/", "");
+            }
             if (x.length() == 0)
                 continue;
             Boolean showLabel = view.showAsLabel.get(set);
@@ -222,9 +231,58 @@ public final class StaticGraphMaker {
         return node;
     }
 
+    // Displays at maximum 3 decimal places
+    private final Pattern weightDP = Pattern.compile("(-?)[0-9]+(\\.[0-9]{0,3})?");
+    // Parse scientific notation
+    private final Pattern sn = Pattern.compile("(?<ip>([^eE]+)?)([eE](?<sn>[+-]?[0-9]+))?");
+
+    /**
+     * Helper method to control the arc label of double's string representation.
+     * Assumes that the given string represents a well formed number.
+     */
+    private String formatNumber(String n){
+        Matcher m;
+        //Making sure the number is simplified
+        n = Double.toString(Double.parseDouble(n));
+
+        //If it is in scientific notation
+        if(n.contains("E") || n.contains("e")) {
+            m = sn.matcher(n);
+            if(m.find()) {
+                double i = Double.parseDouble(m.group("ip"));
+                int s = Integer.parseInt(m.group("sn"));
+                // Display numbers below 0.001 as 0
+                if(s < -3)
+                    n = "0";
+                else if(s < 0){
+                    i = i * Math.pow(10, s);
+                    n = String.valueOf(i);
+                } // s > 0 -> Do nothing
+                else return n;
+            }
+            else n = "0";
+        }
+
+        // If it doesn't have a decimal part, there is nothing to do
+        if(!n.contains("."))
+            return n;
+
+        // Limit the number of decimal places
+        m = weightDP.matcher(n);
+        if(m.find())
+            n = m.group();
+
+        // Trim trailing zeros
+        n = n.replaceAll("0*$","").replaceAll("\\.$","");
+
+        return n;
+    }
+
     /**
      * Create an edge for a given tuple from a relation (if neither start nor end
      * node is explicitly invisible)
+     * ---------------------------------------------------------------------------
+     * Quantitative extension: display quantities
      */
     private boolean createEdge(final boolean hidePrivate, final boolean hideMeta, AlloyRelation rel, AlloyTuple tuple, boolean bidirectional, Color magicColor) {
         // This edge represents a given tuple from a given relation.
@@ -258,6 +316,14 @@ public final class StaticGraphMaker {
                 label = label + (" [" + moreLabel + "]");
             }
         }
+        //Display tuple weight
+        if(instance instanceof AlloyQuantitativeInstance && ((AlloyQuantitativeInstance) instance).isQuantitative(rel)) {
+            String weight = ((AlloyQuantitativeInstance) instance).getWeight(rel, tuple);
+            weight = formatNumber(weight);
+            //handle both probabilities and integers
+            label = "(" + label + "," + weight + ")";
+        }
+
         DotDirection dir = bidirectional ? DotDirection.BOTH : (layoutBack ? DotDirection.BACK : DotDirection.FORWARD);
         DotStyle style = view.edgeStyle.resolve(rel);
         DotColor color = view.edgeColor.resolve(rel);
@@ -287,6 +353,8 @@ public final class StaticGraphMaker {
                     count++;
             return count;
         }
+        // Quantitative extension: Check if the current instance is quantitative
+        boolean isQuantitative = instance instanceof AlloyQuantitativeInstance && ((AlloyQuantitativeInstance) instance).isQuantitative(rel);
         // Otherwise, find bidirectional arrows and only create one edge for
         // each pair.
         Set<AlloyTuple> tuples = instance.relation2tuples(rel);
@@ -296,7 +364,14 @@ public final class StaticGraphMaker {
                 AlloyTuple reverse = tuple.getArity() > 2 ? null : tuple.reverse();
                 // If the reverse tuple is in the same relation, and it is not a
                 // self-edge, then draw it as a <-> arrow.
-                if (reverse != null && tuples.contains(reverse) && !reverse.equals(tuple)) {
+                // -----
+                // Quantitative extension: Additionally, both reverse tuples need to
+                // have the same quantity to be considered bidirectional.
+                if (reverse != null && tuples.contains(reverse) && !reverse.equals(tuple) &&
+                        (!isQuantitative ||
+                                ((AlloyQuantitativeInstance) instance).getWeight(rel, tuple).equals(
+                                ((AlloyQuantitativeInstance) instance).getWeight(rel, reverse)
+                        ))) {
                     ignore.add(reverse);
                     if (createEdge(hidePrivate, hideMeta, rel, tuple, true, magicColor))
                         count = count + 2;

@@ -31,6 +31,17 @@ import java.util.Iterator;
  * @invariant AND.ordinal = 0 && OR.ordinal = 1 && ITE.ordinal = 2 &&
  *            NOT.ordinal = 2 && VAR.ordinal = 4 && CONST.ordinal = 5
  * @author Emina Torlak
+ *
+ * ------------------------------------------------------------------------------
+ * Quantitative extension
+ * @specfield ordinal: [0..21]
+ * @invariant PLUS.ordinal = 6 && MINUS.ordinal = 7 && TIMES.ordinal = 8 &&
+ *            DIV.ordinal = 9 && MOD.ordinal = 10
+ *            MIN.ordinal = 11 && MAX.ordinal = 12 &&
+ *            EQ.ordinal = 13 && GT.ordinal = 14 && LT.ordinal = 15 &&
+ *            GEQ.ordinal = 16 && LEQ.ordinal = 17 &&
+ *            NEG.ordinal = 18 && ABS.ordinal = 19 && SGN.ordinal = 20
+ *
  */
 public abstract class Operator implements Comparable<Operator> {
 
@@ -163,6 +174,194 @@ public abstract class Operator implements Comparable<Operator> {
                                                return "const";
                                            }
                                        };
+
+    /**
+     * N-ary {@link kodkod.engine.num.AritGate PLUS} operator.
+     */
+    public static final NumNary     PLUS    = new NumNary(6) {
+
+        @Override
+        public String toString() {
+            return "+";
+        }
+
+    };
+
+    /**
+     * N-ary {@link kodkod.engine.num.AritGate MINUS} operator.
+     */
+    public static final NumNary     MINUS    = new NumNary(7) {
+
+        @Override
+        public String toString() {
+            return "-";
+        }
+    };
+
+    /**
+     * N-ary {@link kodkod.engine.num.AritGate TIMES} operator.
+     */
+    public static final NumNary     TIMES    = new NumNary(8) {
+
+        @Override
+        public String toString() {
+            return "*";
+        }
+    };
+
+    /**
+     * N-ary {@link kodkod.engine.num.AritGate DIV} operator.
+     */
+    public static final NumNary     DIV    = new NumNary(9) {
+
+        @Override
+        public String toString() {
+            return "/";
+        }
+    };
+
+    /**
+     * N-ary {@link kodkod.engine.num.AritGate MOD} operator.
+     */
+    public static final NumNary     MOD    = new NumNary(10) {
+
+        @Override
+        public String toString() {
+            return "mod";
+        }
+    };
+
+    /**
+     * Binary {@link kodkod.engine.num.ChoiceGate MIN} operator.
+     */
+    public static final Operator     MIN    = new Operator(11) {
+
+        @Override
+        public String toString() {
+            return "min";
+        }
+    };
+
+    /**
+     * Binary {@link kodkod.engine.num.ChoiceGate MAX} operator.
+     */
+    public static final Operator     MAX    = new Operator(12) {
+
+        @Override
+        public String toString() {
+            return "max";
+        }
+    };
+
+    /**
+     * Equality {@link kodkod.engine.num.CmpGate =} operator.
+     */
+    public static final Comparison EQ = new Comparison(13) {
+
+        @Override
+        public String toString() {
+            return "=";
+        }
+    };
+
+    /**
+     * Greater Than {@link kodkod.engine.num.CmpGate >} operator.
+     */
+    public static final Comparison GT = new Comparison(14) {
+
+        @Override
+        public String toString() {
+            return ">";
+        }
+    };
+
+    /**
+     * Less Than {@link kodkod.engine.num.CmpGate <} operator.
+     */
+    public static final Comparison LT = new Comparison(15) {
+
+        @Override
+        public String toString() {
+            return "<";
+        }
+    };
+
+    /**
+     * Greater or Equal to {@link kodkod.engine.num.CmpGate >=} operator.
+     */
+    public static final Comparison GEQ = new Comparison(16) {
+
+        @Override
+        public String toString() {
+            return ">=";
+        }
+    };
+
+    /**
+     * Less or Equal to {@link kodkod.engine.num.CmpGate <=} operator.
+     */
+    public static final Comparison LEQ = new Comparison(17) {
+
+        @Override
+        public String toString() {
+            return "<=";
+        }
+    };
+
+    /**
+     * {@link kodkod.engine.num.UnaryGate NEG} operator.
+     */
+    public static final Unary NEG = new Unary(18) {
+
+        @Override
+        public String toString() { return "-"; }
+    };
+
+    /**
+     * {@link kodkod.engine.num.UnaryGate ABS} operator.
+     */
+    public static final Unary ABS = new Unary(19) {
+
+        @Override
+        public String toString() { return "abs"; }
+    };
+
+    /**
+     * {@link kodkod.engine.num.UnaryGate SGN} operator.
+     */
+    public static final Unary SGN = new Unary(20) {
+
+        @Override
+        public String toString() { return "sgn"; }
+    };
+
+    /**
+     * An n-ary arithmetic operator, with n >= 2
+     */
+    public static abstract class NumNary extends Operator {
+
+        private NumNary(int ordinal) {
+            super(ordinal);
+        }
+    }
+
+    /**
+     * An equality or inequality operator
+     */
+    public static abstract class Comparison extends Operator {
+
+        private Comparison(int ordinal) {
+            super(ordinal);
+        }
+    }
+
+    /**
+     * An unary numeric operator
+     */
+    public static abstract class Unary extends Operator {
+
+        private Unary(int ordinal) { super(ordinal); }
+    }
 
     /**
      * An n-ary operator, where n>=2

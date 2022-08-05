@@ -41,7 +41,7 @@ public final class UnboundLeafException extends RuntimeException {
      *
      * @ensures this.leaf' = leaf
      */
-    UnboundLeafException(String msg, LeafExpression leaf) {
+    public UnboundLeafException(String msg, LeafExpression leaf) {
         super(msg + ": " + leaf);
         this.leaf = leaf;
     }

@@ -68,6 +68,16 @@ public class Relation extends LeafExpression {
     }
 
     /**
+     * Returns a new quantitative relation with the given name and arity.
+     *
+     * @return {r: QuantitativeRelation | r.arity = arity && r.name = name }
+     * @throws IllegalArgumentException arity < 1
+     */
+    public static Relation quantitative_nary(String name, int arity) {
+        return new QuantitativeRelation(name, arity);
+    }
+
+    /**
      * TODO
      *
      * @param name
@@ -209,6 +219,8 @@ public class Relation extends LeafExpression {
     public Quantifier getSkolemVarQuant() {
         return null;
     }
+
+    public boolean isQuantitative() { return false; }
 }
 
 class AtomRelation extends Relation {
@@ -265,4 +277,15 @@ class SkolemRelation extends Relation {
     public final Quantifier getSkolemVarQuant() {
         return quant;
     }
+}
+
+class QuantitativeRelation extends Relation {
+
+    public QuantitativeRelation(String name, int arity) {
+        super(name, arity);
+    }
+
+    @Override
+    public boolean isQuantitative() { return true; }
+
 }

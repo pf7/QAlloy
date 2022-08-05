@@ -357,7 +357,7 @@ public abstract class Dimensions {
         void copy(int srcPos, int[] dest, int destPos, int length) {
             if (srcPos < 0 || length < 0 || srcPos + length > n)
                 throw new ArrayIndexOutOfBoundsException();
-            while (srcPos++ < length) {
+            while (srcPos++ <= length) {
                 dest[destPos++] = size;
             }
         }

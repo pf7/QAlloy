@@ -305,7 +305,7 @@ public class HOLSome4AllTest extends TestCase {
 
     protected int eval(Solution sol, IntExpression ie) {
         Evaluator ev = new Evaluator(sol.instance());
-        return ev.evaluate(ie);
+        return (int)ev.evaluate(ie);
     }
 
     protected TupleSet eval(Solution sol, Expression e) {

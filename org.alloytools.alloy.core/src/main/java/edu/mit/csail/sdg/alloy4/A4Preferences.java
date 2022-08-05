@@ -671,6 +671,8 @@ public class A4Preferences {
                                                                                 }
                                                                             };
 
+    public static final StringChoicePref             AnalysisType           = new StringChoicePref("AnalysisType", "Analysis context", Arrays.asList("Boolean", "Integer"), "Integer");
+    public static final StringChoicePref             SMTSolver     = new StringChoicePref("SMTSolver", "SMT Solver", Arrays.asList("CVC4", "Z3", "MathSAT", "Yices"), "MathSAT");
     public enum Verbosity {
                            /** Level 0. */
                            DEFAULT("0", "low"),

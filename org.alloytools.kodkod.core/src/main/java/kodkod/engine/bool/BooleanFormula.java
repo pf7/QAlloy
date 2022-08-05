@@ -40,7 +40,7 @@ public abstract class BooleanFormula extends BooleanValue implements Iterable<Bo
     /**
      * Constructs a boolean formula with the given negation.
      */
-    BooleanFormula(BooleanFormula negation) {
+    public BooleanFormula(BooleanFormula negation) {
         this.negation = negation;
     }
 
@@ -51,7 +51,7 @@ public abstract class BooleanFormula extends BooleanValue implements Iterable<Bo
      * @return an integer hash of this formula when acting as an input to a
      *         multigate with the given operator.
      */
-    abstract int hash(Operator op);
+    public abstract int hash(Operator op);
 
     /**
      * Returns an integer k' such that 0 < |k'| < k and |k'| is the number of
@@ -92,7 +92,7 @@ public abstract class BooleanFormula extends BooleanValue implements Iterable<Bo
      * @see kodkod.engine.bool.BooleanValue#negation()
      */
     @Override
-    final BooleanFormula negation() {
+    public final BooleanFormula negation() {
         if (negation == null) {
             negation = new NotGate(this);
         }

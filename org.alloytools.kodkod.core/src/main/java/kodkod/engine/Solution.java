@@ -21,11 +21,15 @@
  */
 package kodkod.engine;
 
+import kodkod.engine.num2smt.SMTStatistics;
 import kodkod.instance.Instance;
 
 /**
  * Represents the full solution to a formula: an instance if the formula is
  * satisfiable or a proof of unsatisfiability if not.
+ * --
+ * Quantitative extension: Added support to the UNKNOWN outcome, in order to
+ * fully capture the results of a SMT Problems.
  *
  * @specfield formula: Formula // the formula being solved
  * @specfield bounds: Bounds // the bounds on the formula
@@ -95,6 +99,14 @@ public final class Solution {
     }
 
     /**
+     * Constructs a Solution associated with an UNKNOWN of a SMT Problem,
+     * with the given statistics of the SMT Problem.
+     */
+    public static Solution unknown(SMTStatistics stats) {
+        return new Solution(Outcome.UNKNOWN, stats, null, null);
+    }
+
+    /**
      * Returns the outcome of the attempt to find a model for this.formula. If the
      * outcome is SATISFIABLE or TRIVIALLY_SATISFIABLE, a satisfying instance can be
      * obtained by calling {@link #instance()}. If the formula is UNSATISFIABLE, a
@@ -130,6 +142,13 @@ public final class Solution {
      */
     public final boolean unsat() {
         return outcome == Outcome.UNSATISFIABLE || outcome == Outcome.TRIVIALLY_UNSATISFIABLE;
+    }
+
+    /**
+     * @return this.outcome == Outcome.UNKNOWN
+     */
+    public final boolean unknown() {
+        return outcome == Outcome.UNKNOWN;
     }
 
     /**
@@ -214,8 +233,11 @@ public final class Solution {
                                  * The formula is trivially unsatisfiable with respect to the specified bounds:
                                  * a series of simple transformations reduces the formula to the constant FALSE.
                                  */
-                                TRIVIALLY_UNSATISFIABLE
-
+                                TRIVIALLY_UNSATISFIABLE,
+                                /**
+                                 * The SMT Solver was not able to determine the satisfiability of the formula wrt these bounds.
+                                 */
+                                UNKNOWN
     }
 
 }

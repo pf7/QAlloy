@@ -21,6 +21,9 @@
  */
 package kodkod.engine.bool;
 
+import kodkod.engine.num.CmpGate;
+import kodkod.engine.num.NumNotGate;
+
 /**
  * Visits {@link kodkod.engine.bool.BooleanFormula boolean formulas}. In
  * addition to passing themselves as the argument to the visitor, the boolean
@@ -58,4 +61,21 @@ public interface BooleanVisitor<T, A> {
      */
     public T visit(BooleanVariable variable, A arg);
 
+    /**
+     * Visits the comparison gate and returns the result.
+     *
+     * @return the result of visiting the given CmpGate
+     */
+    default public T visit(CmpGate cmpgate, A arg){
+        throw new UnsupportedOperationException("CmpGate cannot be present in qualitative analysis.");
+    }
+
+    /**
+     * Visits the quantitative inverter and returns the result.
+     *
+     * @return the result of visiting the given quantitative inverter
+     */
+    default public T visit(NumNotGate notgate, A arg){
+        throw new UnsupportedOperationException("Quantitative NotGate cannot be present in qualitative analysis.");
+    }
 }

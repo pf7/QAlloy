@@ -140,12 +140,14 @@ import java_cup.runtime.*;
 "("                   { return alloy_sym(yytext(), CompSym.LPAREN      );}
 ")"                   { return alloy_sym(yytext(), CompSym.RPAREN      );}
 "*"                   { return alloy_sym(yytext(), CompSym.STAR        );}
+"**"                  { return alloy_sym(yytext(), CompSym.STARSTAR    );}
 "++"                  { return alloy_sym(yytext(), CompSym.PLUSPLUS    );}
 "+"                   { return alloy_sym(yytext(), CompSym.PLUS        );}
 ","                   { return alloy_sym(yytext(), CompSym.COMMA       );}
 "->"                  { return alloy_sym(yytext(), CompSym.ARROW       );}
 "-"                   { return alloy_sym(yytext(), CompSym.MINUS       );}
 "."                   { return alloy_sym(yytext(), CompSym.DOT         );}
+";"                   { return alloy_sym(yytext(), CompSym.SEMICOLON   );}
 "/"                   { return alloy_sym(yytext(), CompSym.SLASH       );}
 "::"                  { return alloy_sym(yytext(), CompSym.DOT         );}
 ":>"                  { return alloy_sym(yytext(), CompSym.RANGE       );}
@@ -218,6 +220,7 @@ import java_cup.runtime.*;
 "sum"                 { return alloy_sym(yytext(), CompSym.SUM         );}
 "this"                { return alloy_sym(yytext(), CompSym.THIS        );}
 "univ"                { return alloy_sym(yytext(), CompSym.UNIV        );}
+"drop"                { return alloy_sym(yytext(), CompSym.DROP        );}
 
 [\"] ([^\\\"] | ("\\" .))* [\"] [\$0-9a-zA-Z_\'\"] [\$0-9a-zA-Z_\'\"]* { throw new ErrorSyntax(alloy_here(yytext()),"String literal cannot be followed by a legal identifier character."); }
 [\"] ([^\\\"] | ("\\" .))* [\"]                                        { return alloy_string(yytext()); }

@@ -54,7 +54,7 @@ public final class BooleanConstant extends BooleanValue {
      * @return c: BooleanConstant | [[c]] = ![[this]]
      */
     @Override
-    BooleanValue negation() {
+    public BooleanValue negation() {
         return this == TRUE ? FALSE : TRUE;
     }
 

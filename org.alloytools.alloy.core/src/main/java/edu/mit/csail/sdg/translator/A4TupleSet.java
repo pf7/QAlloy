@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import edu.mit.csail.sdg.alloy4.ErrorAPI;
+import kodkod.instance.QtTupleSet;
 import kodkod.instance.Tuple;
 import kodkod.instance.TupleSet;
 
@@ -69,7 +70,11 @@ public final class A4TupleSet implements Iterable<A4Tuple> {
             public final A4Tuple next() {
                 if (!it.hasNext())
                     throw new NoSuchElementException();
-                return new A4Tuple(it.next(), sol);
+                Tuple t = it.next();
+                // Quantitative extension: Expect quantitative tuples
+                return tuples instanceof QtTupleSet ?
+                        new A4QtTuple(t, sol, ((QtTupleSet) tuples).getWeight(t.index())) :
+                        new A4Tuple(t, sol);
             }
 
             @Override

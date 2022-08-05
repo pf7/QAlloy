@@ -30,13 +30,13 @@ import java.util.Set;
  * <b>Thread Safety:</b> Can be called only by the AWT event thread.
  */
 
-public final class StaticProjector {
+public class StaticProjector {
 
     /**
      * Constructor is private, since this utility class never needs to be
      * instantiated.
      */
-    private StaticProjector() {}
+    protected StaticProjector() {}
 
     /**
      * Given an unprojected model, project it over the given collection of
@@ -71,7 +71,7 @@ public final class StaticProjector {
      *            If a relation R is totally deleted, due to the projection, then R
      *            won't be in data.keySet().
      */
-    private static AlloyModel project(AlloyModel unprojectedModel, Collection<AlloyType> typesToBeProjected, Map<AlloyRelation,List<Integer>> data) {
+    protected static AlloyModel project(AlloyModel unprojectedModel, Collection<AlloyType> typesToBeProjected, Map<AlloyRelation,List<Integer>> data) {
         Set<AlloyType> types = new LinkedHashSet<AlloyType>(unprojectedModel.getTypes());
         List<AlloySet> sets = new ArrayList<AlloySet>(unprojectedModel.getSets());
         List<AlloyRelation> relations = new ArrayList<AlloyRelation>();

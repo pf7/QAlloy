@@ -37,10 +37,7 @@ import edu.mit.csail.sdg.ast.Sig;
 import edu.mit.csail.sdg.ast.Sig.Field;
 import edu.mit.csail.sdg.ast.Sig.PrimSig;
 import edu.mit.csail.sdg.ast.Sig.SubsetSig;
-import edu.mit.csail.sdg.translator.A4Solution;
-import edu.mit.csail.sdg.translator.A4SolutionReader;
-import edu.mit.csail.sdg.translator.A4Tuple;
-import edu.mit.csail.sdg.translator.A4TupleSet;
+import edu.mit.csail.sdg.translator.*;
 
 /**
  * This utility class parses an XML file into an AlloyInstance object.
@@ -48,10 +45,10 @@ import edu.mit.csail.sdg.translator.A4TupleSet;
  * <b>Thread Safety:</b> Can be called only by the AWT event thread.
  */
 
-public final class StaticInstanceReader {
+public class StaticInstanceReader {
 
     /** The resulting AlloyInstance object. */
-    private final AlloyInstance                      ans;
+    protected final AlloyInstance                      ans;
 
     /** This is the list of toplevel sigs. */
     private final List<PrimSig>                      toplevels   = new ArrayList<PrimSig>();
@@ -80,12 +77,12 @@ public final class StaticInstanceReader {
     /**
      * This stores the set of Visualizer AlloySet objects we created.
      */
-    private final Set<AlloySet>                      sets        = new LinkedHashSet<AlloySet>();
+    protected final Set<AlloySet>                      sets        = new LinkedHashSet<AlloySet>();
 
     /**
      * This maps each Visualizer AlloyRelation to its set of (possibly 0) tuples.
      */
-    private final Map<AlloyRelation,Set<AlloyTuple>> rels        = new LinkedHashMap<AlloyRelation,Set<AlloyTuple>>();
+    protected final Map<AlloyRelation,Set<AlloyTuple>> rels        = new LinkedHashMap<AlloyRelation,Set<AlloyTuple>>();
 
     /**
      * For each sig A and B, if A extends B, and B is not univ, then (A,B) will be
@@ -97,12 +94,12 @@ public final class StaticInstanceReader {
      * This maps each Visualizer AlloyAtom to its set of (possibly 0) AlloySet that
      * contains it.
      */
-    private final Map<AlloyAtom,Set<AlloySet>>       atom2sets   = new LinkedHashMap<AlloyAtom,Set<AlloySet>>();
+    protected final Map<AlloyAtom,Set<AlloySet>>       atom2sets   = new LinkedHashMap<AlloyAtom,Set<AlloySet>>();
 
     /**
      * This maps each AlloyAtom label to the AlloyAtom we created for it.
      */
-    private final Map<String,AlloyAtom>              string2atom = new LinkedHashMap<String,AlloyAtom>();
+    protected final Map<String,AlloyAtom>              string2atom = new LinkedHashMap<String,AlloyAtom>();
 
     /**
      * Create a new AlloyType whose label is unambiguous with any existing one.
@@ -121,7 +118,7 @@ public final class StaticInstanceReader {
     /**
      * Create a new AlloySet whose label is unambiguous with any existing one.
      */
-    private AlloySet makeSet(String label, boolean isPrivate, boolean isMeta, AlloyType type) {
+    protected AlloySet makeSet(String label, boolean isPrivate, boolean isMeta, AlloyType type) {
         while (label.equals(Sig.UNIV.label) || label.equals(Sig.SIGINT.label) || label.equals(Sig.SEQIDX.label) || label.equals(Sig.STRING.label))
             label = label + "'";
         while (true) {
@@ -135,7 +132,7 @@ public final class StaticInstanceReader {
     /**
      * Create a new AlloyRelation whose label is unambiguous with any existing one.
      */
-    private AlloyRelation makeRel(String label, boolean isPrivate, boolean isMeta, List<AlloyType> types) {
+    protected final AlloyRelation makeRel(String label, boolean isPrivate, boolean isMeta, List<AlloyType> types) {
         while (label.equals(Sig.UNIV.label) || label.equals(Sig.SIGINT.label) || label.equals(Sig.SEQIDX.label) || label.equals(Sig.STRING.label))
             label = label + "'";
         while (true) {
@@ -150,7 +147,7 @@ public final class StaticInstanceReader {
      * Returns the AlloyType corresponding to the given sig; create an AlloyType for
      * it if none existed before.
      */
-    private AlloyType sig(PrimSig s) throws Err {
+    protected AlloyType sig(PrimSig s) throws Err {
         if (s == Sig.NONE)
             throw new ErrorFatal("Unexpected sig \"none\" encountered.");
         AlloyType ans = sig2type.get(s);
@@ -249,9 +246,27 @@ public final class StaticInstanceReader {
     }
 
     /**
+     * Defines the AlloyRelation w.r.t. the given expression.
+     */
+    protected void defRel(A4Solution sol, String label, Expr expr, boolean isPrivate, boolean isMeta, List<AlloyType> types, Expr mask) throws Err{
+        AlloyRelation rel = makeRel(label, isPrivate, isMeta, types);
+        Set<AlloyTuple> ts = new LinkedHashSet<AlloyTuple>();
+        for (A4Tuple tp : (A4TupleSet) (sol.eval(expr.intersect(mask)))) {
+            AlloyAtom[] atoms = new AlloyAtom[tp.arity()];
+            for (int i = 0; i < tp.arity(); i++) {
+                atoms[i] = string2atom.get(tp.atom(i));
+                if (atoms[i] == null)
+                    throw new ErrorFatal("Unexpected XML inconsistency: cannot resolve atom " + tp.atom(i));
+            }
+            ts.add(new AlloyTuple(atoms));
+        }
+        rels.put(rel, ts);
+    }
+
+    /**
      * Construct an AlloySet or AlloyRelation corresponding to the given expression.
      */
-    private void setOrRel(A4Solution sol, String label, Expr expr, boolean isPrivate, boolean isMeta) throws Err {
+    protected void setOrRel(A4Solution sol, String label, Expr expr, boolean isPrivate, boolean isMeta) throws Err {
         for (List<PrimSig> ps : expr.type().fold()) {
             if (ps.size() == 1) {
                 PrimSig t = ps.get(0);
@@ -270,24 +285,27 @@ public final class StaticInstanceReader {
                     else
                         mask = mask.product(ps.get(i));
                 }
-                AlloyRelation rel = makeRel(label, isPrivate, isMeta, types);
-                Set<AlloyTuple> ts = new LinkedHashSet<AlloyTuple>();
-                for (A4Tuple tp : (A4TupleSet) (sol.eval(expr.intersect(mask)))) {
-                    AlloyAtom[] atoms = new AlloyAtom[tp.arity()];
-                    for (int i = 0; i < tp.arity(); i++) {
-                        atoms[i] = string2atom.get(tp.atom(i));
-                        if (atoms[i] == null)
-                            throw new ErrorFatal("Unexpected XML inconsistency: cannot resolve atom " + tp.atom(i));
-                    }
-                    ts.add(new AlloyTuple(atoms));
-                }
-                rels.put(rel, ts);
+                defRel(sol, label, expr, isPrivate, isMeta, types, mask);
             }
         }
     }
 
+    /**
+     * Parses the XML into a qualitative solution.
+     */
+    protected A4Solution readSolution(XMLNode root){
+        return A4SolutionReader.read(new ArrayList<Sig>(), root);
+    }
+
+    /**
+     * Constructs an AlloyInstance.
+     */
+    protected AlloyInstance makeAlloyInstance(A4Solution sol, AlloyModel am, Map<AlloyAtom,Set<AlloySet>> atom2sets, Map<AlloyRelation,Set<AlloyTuple>> rels, boolean isMeta){
+        return new AlloyInstance(sol, sol.getOriginalFilename(), sol.getOriginalCommand(), am, atom2sets, rels, isMeta);
+    }
+
     /** Parse the file into an AlloyInstance if possible. */
-    private StaticInstanceReader(XMLNode root) throws Err {
+    protected StaticInstanceReader(XMLNode root) throws Err {
         XMLNode inst = null;
         for (XMLNode sub : root)
             if (sub.is("instance")) {
@@ -297,7 +315,7 @@ public final class StaticInstanceReader {
         if (inst == null)
             throw new ErrorSyntax("The XML file must contain an <instance> element.");
         boolean isMeta = "yes".equals(inst.getAttribute("metamodel"));
-        A4Solution sol = A4SolutionReader.read(new ArrayList<Sig>(), root);
+        A4Solution sol = readSolution(root);
         for (Sig s : sol.getAllReachableSigs())
             if (s instanceof PrimSig && ((PrimSig) s).parent == Sig.UNIV)
                 toplevels.add((PrimSig) s);
@@ -407,7 +425,7 @@ public final class StaticInstanceReader {
             }
         }
         AlloyModel am = new AlloyModel(sig2type.values(), sets, rels.keySet(), ts);
-        ans = new AlloyInstance(sol, sol.getOriginalFilename(), sol.getOriginalCommand(), am, atom2sets, rels, isMeta);
+        ans = makeAlloyInstance(sol, am, atom2sets, rels, isMeta);
     }
 
     /** Parse the file into an AlloyInstance if possible. */

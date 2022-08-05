@@ -53,10 +53,10 @@ import kodkod.instance.TupleSet;
  * from an XML file.
  */
 
-public final class A4SolutionReader {
+public class A4SolutionReader {
 
     /** The resulting A4Solution object. */
-    private final A4Solution          sol;
+    protected final A4Solution          sol;
 
     /** The provided choices of existing Sig and Field. */
     private final LinkedHashSet<Expr> choices = new LinkedHashSet<Expr>();
@@ -80,7 +80,7 @@ public final class A4SolutionReader {
     private final Map<Expr,TupleSet>  expr2ts = new LinkedHashMap<Expr,TupleSet>();
 
     /** The Kodkod tupleset factory. */
-    private final TupleFactory        factory;
+    protected final TupleFactory        factory;
 
     /**
      * Helper method that returns true if the given attribute value in the given XML
@@ -136,12 +136,25 @@ public final class A4SolutionReader {
     }
 
     /** Parse tuples. */
-    private TupleSet parseTuples(XMLNode tuples, int arity) throws Err {
+    protected TupleSet parseTuples(XMLNode tuples, int arity) throws Err {
         TupleSet ans = factory.noneOf(arity);
         for (XMLNode sub : tuples)
             if (sub.is("tuple"))
                 ans.add(parseTuple(sub, arity));
         return ans;
+    }
+
+    /** Context dependent atom parsing. */
+    protected TupleSet parseAtom(XMLNode sub, TupleSet atom){
+        atom.add(factory.tuple(sub.getAttribute("label")));
+        return atom;
+    }
+
+    /** Context dependent sig parsing. */
+    protected TupleSet parseParentSig(TupleSet parent, TupleSet child){
+        parent = parent.clone();
+        parent.addAll(child);
+        return parent;
     }
 
     /** Parse sig/set. */
@@ -188,7 +201,7 @@ public final class A4SolutionReader {
         TupleSet ts = factory.noneOf(1);
         for (XMLNode sub : node) {
             if (sub.is("atom")) {
-                ts.add(factory.tuple(sub.getAttribute("label")));
+                ts = parseAtom(sub, ts);
                 continue;
             }
             if (!sub.is("type"))
@@ -234,8 +247,7 @@ public final class A4SolutionReader {
                 if (ts2 == null)
                     ts2 = ts.clone();
                 else {
-                    ts2 = ts2.clone();
-                    ts2.addAll(ts);
+                    ts2 = parseParentSig(ts2, ts);
                 }
                 expr2ts.put(ans2, ts2);
             }
@@ -271,6 +283,7 @@ public final class A4SolutionReader {
         String label = label(node);
         Pos isPrivate = yes(node, "private") ? Pos.UNKNOWN : null;
         Pos isMeta = yes(node, "meta") ? Pos.UNKNOWN : null;
+        Pos isInt = yes(node, "int") ? Pos.UNKNOWN : null;
         Expr type = null;
         for (XMLNode sub : node)
             if (sub.is("types")) {
@@ -295,7 +308,7 @@ public final class A4SolutionReader {
                 break;
             }
         if (field == null)
-            field = parent.addTrickyField(Pos.UNKNOWN, isPrivate, null, null, isMeta, new String[] {
+            field = parent.addTrickyField(Pos.UNKNOWN, isPrivate, null, null, isMeta, isInt, new String[] {
                                                                                                     label
             }, UNIV.join(type))[0];
         TupleSet ts = parseTuples(node, arity);
@@ -330,7 +343,7 @@ public final class A4SolutionReader {
     }
 
     /** Parse everything. */
-    private A4SolutionReader(Iterable<Sig> sigs, XMLNode xml) throws IOException, Err {
+    protected A4SolutionReader(Iterable<Sig> sigs, XMLNode xml) throws IOException, Err {
         for (Sig s : sigs)
             if (!s.builtin) {
                 allsigs.add(s);
@@ -353,10 +366,7 @@ public final class A4SolutionReader {
         final int bitwidth = Integer.parseInt(inst.getAttribute("bitwidth"));
         final int maxseq = Integer.parseInt(inst.getAttribute("maxseq"));
         final int max = Util.max(bitwidth), min = Util.min(bitwidth);
-        if (bitwidth >= 1 && bitwidth <= 30)
-            for (int i = min; i <= max; i++) {
-                atoms.add(Integer.toString(i));
-            }
+        integerAtoms(atoms, bitwidth, min, max);
         for (XMLNode x : inst) {
             String id = x.getAttribute("ID");
             if (id.length() > 0 && (x.is("field") || x.is("skolem") || x.is("sig"))) {
@@ -377,6 +387,8 @@ public final class A4SolutionReader {
         // create the A4Solution object
         A4Options opt = new A4Options();
         opt.originalFilename = inst.getAttribute("filename");
+        // parse the analysis context
+        opt.analysisType = inst.getAttribute("context");
         sol = new A4Solution(inst.getAttribute("command"), bitwidth, maxseq, strings, atoms, null, opt, 1);
         factory = sol.getFactory();
         // parse all the sigs, fields, and skolems
@@ -395,7 +407,7 @@ public final class A4SolutionReader {
                 if (ts == null)
                     ts = factory.noneOf(1); // If the sig was NOT mentioned in
                                            // the XML file...
-                Relation r = sol.addRel(s.label, ts, ts);
+                Relation r = sol.addRel(s.label, ts, ts, s.isInt != null);
                 sol.addSig(s, r);
                 for (Field f : s.getFields()) {
                     ts = expr2ts.remove(f);
@@ -405,14 +417,32 @@ public final class A4SolutionReader {
                                                               // mentioned in
                                                               // the XML
                                                               // file...
-                    r = sol.addRel(s.label + "." + f.label, ts, ts);
+                    r = sol.addRel(s.label + "." + f.label, ts, ts, f.isInt != null);
                     sol.addField(f, r);
                 }
             }
+
+        finishParsing(sol, expr2ts);
+    }
+
+    /**
+     * Fills the universe with the adequate Integer atoms, depending on the analysis type.
+     */
+    protected void integerAtoms(final TreeSet<String> atoms, int bitwidth, int min, int max){
+        if (bitwidth >= 1 && bitwidth <= 30)
+            for (int i = min; i <= max; i++) {
+                atoms.add(Integer.toString(i));
+            }
+    }
+
+    /**
+     * Steps of the parsing process which depend on the analysis type.
+     */
+    protected void finishParsing(A4Solution sol, Map<Expr,TupleSet>  expr2ts) throws IOException, Err{
         for (Map.Entry<Expr,TupleSet> e : expr2ts.entrySet()) {
             ExprVar v = (ExprVar) (e.getKey());
             TupleSet ts = e.getValue();
-            Relation r = sol.addRel(v.label, ts, ts);
+            Relation r = sol.addRel(v.label, ts, ts, false);
             sol.kr2type(r, v.type());
         }
         // Done!
