@@ -1,24 +1,26 @@
-![Logo](https://avatars3.githubusercontent.com/u/30268214?v=4&s=200)
-[![Build Status](https://travis-ci.org/AlloyTools/org.alloytools.alloy.svg?branch=master)](https://travis-ci.org/AlloyTools/org.alloytools.alloy)
-# Alloy
+# QAlloy
 
-Alloy 4 is a self-contained executable, which includes the Kodkod
-model finder and a variety of SAT solvers, as well as the standard
-Alloy library and a collection of tutorial examples. The same jar file
-can be incorporated into other applications to use Alloy as an API,
-and includes the source code. See the release notes for details of new
-features. 
+QAlloy is an extension of Alloy with *quantitative relations*, that add integer
+weights to associations between domain elements. Having integers
+internalised in relations, instead of being explicit domain elements
+like in standard Alloy, allows quantitative requirements to be specified 
+in QAlloy with a similar elegance to structural requirements,
+with the side-effect of providing basic dimensional analysis support
+via the type-system. The QAlloy Analyzer also implements an
+SMT-based engine that enables quantities to be unbounded, thus
+avoiding many problems that may arise with the current bounded
+integer semantics of Alloy.
 
-More documentation can be found at: http://alloytools.org/documentation.html.
+More documentation can be found at: https://github.com/pf7/QAlloy-Artifact.
 
 # Requirements
 
-Alloy runs on all operating systems with a recent JVM (Java 6 or later). 
-It is made available as a runnable jar file with both a cross-platform SAT solver
-([Sat4j](http://www.sat4j.org/) and more efficient native SAT solvers ([minisat](http://minisat.se), [lingeling/plingeling](http://fmv.jku.at/lingeling/), [glucose](http://www.labri.fr/perso/lsimon/glucose/)).
-
-Note however that starting with macOS High Sierra, it is necessary to install a dedicated
-JVM to run Alloy on macOS. A `.pkg` file is provided for that purpose.
+QAlloy runs on all operating systems with a recent JVM (Java 6 or later). 
+It is made available as a runnable jar file with SMT Solvers integrated,
+including [CVC4](https://github.com/CVC4/CVC4-archived), 
+[Z3](https://github.com/Z3Prover/z3), 
+[MathSAT](https://mathsat.fbk.eu/) and 
+[Yices](https://yices.csl.sri.com/).
 
 # TL;DR
 
@@ -30,7 +32,7 @@ Checkout the project and type ./gradlew. You find the executable JAR in org.allo
      Java HotSpot(TM) 64-Bit Server VM (build 25.144-b01, mixed model
      $ git clone git@github.com:AlloyTools/org.alloytools.alloy.git
      $ cd org.alloytools.alloy
-     $ ./gradlew build
+     $ ./gradlew build -x test
      $ java -jar org.alloytools.alloy.dist/target/org.alloytools.alloy.dist.jar
      # opens GUI
 
@@ -41,20 +43,20 @@ Note: if you are behind a proxy, the call to `gradlew` is likely to fail, unless
           -Dhttps.proxyUser=XXXXX -Dhttps.proxyPassword=XXXXX \
           build
 
-## Building Alloy
+## Building QAlloy
 
-The Alloy build is using a _bnd workspace_ setup using a maven layout. This means it can be build  with Gradle and  the Eclipse IDE for interactive development. Projects are setup to continuously deliver the executable.
+The QAlloy build is using a _bnd workspace_ setup using a maven layout. This means it can be build  with Gradle and  the Eclipse IDE for interactive development. Projects are setup to continuously deliver the executable.
 
 ### Projects
 
 The workspace is divided into a number of projects:
 
 * [cnf](cnf) – Setup directory. Dependencies are specified in [cnf/central.xml] using the maven POM layout
-* [org.alloytools.alloy.application](org.alloytools.alloy.application) – Main application code includes the parser, ast, visualiser, and application code
+* [org.alloytools.alloy.application](org.alloytools.alloy.application) – Main application code includes the quantitative extension of the parser, ast, visualiser, and application code
 * [org.alloytools.alloy.dist](org.alloytools.alloy.dist) – Project to create the distribution executable JAR
 * [org.alloytools.alloy.extra](org.alloytools.alloy.extra) – Models and examples
-* [org.alloytools.kodkod.core](org.alloytools.kodkod.core) – Kodkod without native code
-* [org.alloytools.kodkod.native](org.alloytools.kodkod.native) – The native code libraries for kodkod
+* [org.alloytools.kodkod.core](org.alloytools.kodkod.core) – Quantitative Kodkod
+* [org.alloytools.kodkod.native](org.alloytools.kodkod.native) – The native code libraries for kodkod and SMT Solver binaries
 
 ### Relevant Project files
 
