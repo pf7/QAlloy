@@ -16,7 +16,7 @@ import java.util.*;
  */
 public final class QuantitativeInstanceReader extends StaticInstanceReader{
 
-    private Map<AlloyRelation, Map<AlloyTuple, String>> weight = null;
+    private Map<AlloyRelation, Map<AlloyTuple, String>> qtrel = null;
     private Map<AlloyAtom, Map<String, String>> qtsig = null;
 
     private QuantitativeInstanceReader(XMLNode root) throws Err {
@@ -40,7 +40,7 @@ public final class QuantitativeInstanceReader extends StaticInstanceReader{
     protected AlloyInstance makeAlloyInstance(A4Solution sol, AlloyModel am, Map<AlloyAtom,Set<AlloySet>> atom2sets, Map<AlloyRelation,Set<AlloyTuple>> rels, boolean isMeta){
         if(isMeta)
             return super.makeAlloyInstance(sol, am, atom2sets, rels, isMeta);
-        return new AlloyQuantitativeInstance(sol, sol.getOriginalFilename(), sol.getOriginalCommand(), am, atom2sets, rels, isMeta, weight, qtsig);
+        return new AlloyQuantitativeInstance(sol, sol.getOriginalFilename(), sol.getOriginalCommand(), am, atom2sets, rels, isMeta, qtrel, qtsig);
     }
 
     /**
@@ -48,26 +48,21 @@ public final class QuantitativeInstanceReader extends StaticInstanceReader{
      * Additionally, stores the quantities associated with each quantitative subset sig within this instance.
      * */
     @Override
-    protected void setOrRel(A4Solution sol, String label, Expr expr, boolean isPrivate, boolean isMeta) throws Err {
+    protected void setOrRel(A4Solution sol, String label, Expr expr, boolean isPrivate, boolean isMeta, boolean isInt) throws Err {
         for (List<Sig.PrimSig> ps : expr.type().fold()) {
             if (ps.size() == 1) {
                 Sig.PrimSig t = ps.get(0);
-                AlloySet set = makeSet(label, isPrivate, isMeta, sig(t));
+                AlloySet set = makeSet(label, isPrivate, isMeta, isInt, sig(t));
                 sets.add(set);
 
                 A4TupleSet ts = (A4TupleSet)sol.eval(t.domain(expr));
 
-                boolean isQuantitative = false;
-                Iterator<A4Tuple> it = ts.iterator();
-                while(!isQuantitative && it.hasNext())
-                    isQuantitative = it.next() instanceof A4QtTuple;
-
-                if(isQuantitative)
+                if(isInt)
                     for (A4Tuple tp : ts) {
                         AlloyAtom at = string2atom.get(tp.atom(0));
                         atom2sets.get(at).add(set);
 
-                        String q = (tp instanceof A4QtTuple) ? ((A4QtTuple) tp).getWeight() : "1";
+                        String q = (tp instanceof A4QtTuple) ? ((A4QtTuple) tp).getQuantity() : "1";
                         if(qtsig == null)
                             this.qtsig = new HashMap<>();
                         if(!qtsig.containsKey(at))
@@ -88,22 +83,22 @@ public final class QuantitativeInstanceReader extends StaticInstanceReader{
                     else
                         mask = mask.product(ps.get(i));
                 }
-                defRel(sol, label, expr, isPrivate, isMeta, types, mask);
+                defRel(sol, label, expr, isPrivate, isMeta, isInt, types, mask);
             }
         }
     }
 
     /**
      * Defines the AlloyRelation w.r.t. the given expression,
-     * while also tracking the weight associated with its arcs.
+     * while also tracking the quantity associated with its arcs.
      */
     @Override
-    protected void defRel(A4Solution sol, String label, Expr expr, boolean isPrivate, boolean isMeta, List<AlloyType> types, Expr mask) throws Err{
-        AlloyRelation rel = makeRel(label, isPrivate, isMeta, types);
+    protected void defRel(A4Solution sol, String label, Expr expr, boolean isPrivate, boolean isMeta, boolean isInt, List<AlloyType> types, Expr mask) throws Err{
+        AlloyRelation rel = makeRel(label, isPrivate, isMeta, isInt, types);
         Set<AlloyTuple> ts = new LinkedHashSet<AlloyTuple>();
-        if(weight == null)
-            this.weight = new HashMap<>();
-        Map<AlloyTuple, String> relWeight = new HashMap<>();
+        if(qtrel == null)
+            this.qtrel = new HashMap<>();
+        Map<AlloyTuple, String> relQt = new HashMap<>();
 
         for (A4Tuple tp : (A4TupleSet) sol.eval(expr)){ //(sol.eval(expr.intersect(mask)))) { //todo mask ?
             AlloyAtom[] atoms = new AlloyAtom[tp.arity()];
@@ -114,12 +109,12 @@ public final class QuantitativeInstanceReader extends StaticInstanceReader{
             }
             AlloyTuple tuple = new AlloyTuple(atoms);
             ts.add(tuple);
-            if(tp instanceof A4QtTuple)
-                relWeight.put(tuple,((A4QtTuple)tp).getWeight()); //set tuple weight
+            if(isInt)
+                relQt.put(tuple, tp instanceof A4QtTuple ? ((A4QtTuple)tp).getQuantity() : "1"); //set tuple quantity
         }
         // Check if this is a quantitative relation
-        if(relWeight.size() > 0)
-            this.weight.put(rel, relWeight);
+        if(isInt && relQt.size() > 0)
+            this.qtrel.put(rel, relQt);
 
         rels.put(rel, ts);
     }

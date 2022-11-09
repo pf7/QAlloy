@@ -14,20 +14,20 @@ import java.util.Set;
  */
 public class AlloyQuantitativeInstance extends AlloyInstance {
 
-    private final Map<AlloyRelation, Map<AlloyTuple, String>> weight;
+    private final Map<AlloyRelation, Map<AlloyTuple, String>> qtrel;
     private final Map<AlloyAtom, Map<String, String>> qtsig;
 
-    public AlloyQuantitativeInstance(A4Solution originalA4, String filename, String commandname, AlloyModel model, Map<AlloyAtom, Set<AlloySet>> atom2sets, Map<AlloyRelation, Set<AlloyTuple>> rel2tuples, boolean isMetamodel, Map<AlloyRelation, Map<AlloyTuple, String>> weight, Map<AlloyAtom, Map<String, String>> msig) {
+    public AlloyQuantitativeInstance(A4Solution originalA4, String filename, String commandname, AlloyModel model, Map<AlloyAtom, Set<AlloySet>> atom2sets, Map<AlloyRelation, Set<AlloyTuple>> rel2tuples, boolean isMetamodel, Map<AlloyRelation, Map<AlloyTuple, String>> qtrel, Map<AlloyAtom, Map<String, String>> msig) {
         super(originalA4, filename, commandname, model, atom2sets, rel2tuples, isMetamodel);
-        this.weight = weight == null ? new HashMap<>() : weight;
+        this.qtrel = qtrel == null ? new HashMap<>() : qtrel;
         this.qtsig = msig == null ? new HashMap<>() : msig;
     }
 
     /**
-     * Obtain the weight of the AlloyAtom specified.
+     * Obtain the quantity of the AlloyAtom specified.
      * Returns null if such tuple does not exist.
      */
-    public String getWeight(AlloyAtom a, String subsig){
+    public String getQuantity(AlloyAtom a, String subsig){
         return qtsig.getOrDefault(a, new HashMap<>()).get(subsig);
     }
 
@@ -46,25 +46,25 @@ public class AlloyQuantitativeInstance extends AlloyInstance {
     }
 
     /**
-     * Obtain the weight of the AlloyTuple specified within the given AlloyRelation.
+     * Obtain the quantity of the AlloyTuple specified within the given AlloyRelation.
      * Returns null if such tuple does not exist.
      */
-    public String getWeight(AlloyRelation r, AlloyTuple t){
-        return weight.containsKey(r) ? weight.get(r).get(t) : null;
+    public String getQuantity(AlloyRelation r, AlloyTuple t){
+        return qtrel.containsKey(r) ? qtrel.get(r).get(t) : null;
     }
 
     /**
-     * Returns the weights associated with each AlloyTuple within every AlloyRelation contained in this instance.
+     * Returns the quantities associated with each AlloyTuple within every AlloyRelation contained in this instance.
      */
-    public Map<AlloyRelation, Map<AlloyTuple, String>> getWeight(){
-        return this.weight;
+    public Map<AlloyRelation, Map<AlloyTuple, String>> getQuantity(){
+        return this.qtrel;
     }
 
     /**
      * Returns true if the given relation is a quantitative relation of this instance.
      */
     public boolean isQuantitative(AlloyRelation r){
-        return weight.containsKey(r);
+        return qtrel.containsKey(r);
     }
 
     /*@Override

@@ -34,13 +34,13 @@ public final class AlloyRelation extends AlloyElement {
      * This caches an instance of the "extends" AlloyRelation, so we don't have to
      * keep re-constructing it.
      */
-    public static final AlloyRelation  EXTENDS = new AlloyRelation("extends", false, false, Util.asList(AlloyType.UNIV, AlloyType.UNIV));
+    public static final AlloyRelation  EXTENDS = new AlloyRelation("extends", false, false, false, Util.asList(AlloyType.UNIV, AlloyType.UNIV));
 
     /**
      * This caches an instance of the "in" AlloyRelation, so we don't have to keep
      * re-constructing it.
      */
-    public static final AlloyRelation  IN      = new AlloyRelation("in", false, false, Util.asList(AlloyType.SET, AlloyType.UNIV));
+    public static final AlloyRelation  IN      = new AlloyRelation("in", false, false, false, Util.asList(AlloyType.SET, AlloyType.UNIV));
 
     /** The unmodifiable list of types. */
     private final ConstList<AlloyType> types;
@@ -58,16 +58,23 @@ public final class AlloyRelation extends AlloyElement {
     public final boolean               isMeta;
 
     /**
+     * Records whether this relation is known to be "int"; NOTE: this value is NOT
+     * USED during equals() comparison.
+     */
+    public final boolean               isInt;
+
+    /**
      * Constructs a new AlloyRelation with that name and that list of types;
      * types.size() must be 2 or above.
      */
-    public AlloyRelation(String name, boolean isPrivate, boolean isMeta, List<AlloyType> types) {
+    public AlloyRelation(String name, boolean isPrivate, boolean isMeta, boolean isInt, List<AlloyType> types) {
         super(name);
         if (types == null || types.size() < 2)
             throw new RuntimeException("An AlloyRelation object must have 2 or more types.");
         this.types = ConstList.make(types);
         this.isPrivate = isPrivate;
         this.isMeta = isMeta;
+        this.isInt = isInt;
     }
 
     /**

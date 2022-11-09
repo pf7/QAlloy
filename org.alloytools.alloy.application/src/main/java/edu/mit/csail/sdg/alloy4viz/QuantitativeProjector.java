@@ -18,9 +18,11 @@ public class QuantitativeProjector extends StaticProjector{
         Map<AlloyRelation,Set<AlloyTuple>> rel2tuples = new LinkedHashMap<AlloyRelation,Set<AlloyTuple>>();
         AlloyModel newModel = project(oldInstance.model, projection.getProjectedTypes(), data);
 
-        //Current weights associated with each relation
-        Map<AlloyRelation, Map<AlloyTuple, String>> weight = ((AlloyQuantitativeInstance)oldInstance).getWeight();
-        //Weights associated with each quantitative subsig
+        //Current quantities associated with each relation
+        Map<AlloyRelation, Map<AlloyTuple, String>> oldRelQts = ((AlloyQuantitativeInstance)oldInstance).getQuantity();
+        //New relation representation
+        Map<AlloyRelation, Map<AlloyTuple, String>> qtrel = new HashMap<>();
+        //New subset sigs representation
         Map<AlloyAtom, Map<String, String>> qtsig = ((AlloyQuantitativeInstance)oldInstance).getQtSubsigs();
 
         // First put all the atoms from the old instance into the new one
@@ -47,22 +49,36 @@ public class QuantitativeProjector extends StaticProjector{
                 List<AlloyAtom> newTuple = oldTuple.project(list);
                 List<AlloyType> newObj = r.project(list);
                 if (newObj.size() > 1 && newTuple.size() > 1) {
-                    AlloyRelation r2 = new AlloyRelation(r.getName(), r.isPrivate, r.isMeta, newObj);
+                    AlloyRelation r2 = new AlloyRelation(r.getName(), r.isPrivate, r.isMeta, r.isInt, newObj);
                     Set<AlloyTuple> answer = rel2tuples.get(r2);
                     if (answer == null)
                         rel2tuples.put(r2, answer = new LinkedHashSet<AlloyTuple>());
                     AlloyTuple tuple = new AlloyTuple(newTuple);
-                    //Update weight
                     answer.add(tuple);
-                    Map<AlloyTuple, String> relWeight = weight.get(r);
-                    if(relWeight != null)
-                        relWeight.put(tuple, relWeight.get(oldTuple));
+                    // Store quantities associated with the new tuple
+                    if(r.isInt) {
+                        Map<AlloyTuple, String> relQt = qtrel.get(r2);
+                        if (relQt == null) {
+                            relQt = new HashMap<>();
+                            qtrel.put(r2, relQt);
+                        }
+                        relQt.put(tuple, oldRelQts.get(r).get(oldTuple));
+                    }
                 } else if (newObj.size() == 1 && newTuple.size() == 1) {
                     AlloyAtom a = newTuple.get(0);
                     Set<AlloySet> answer = atom2sets.get(a);
                     if (answer == null)
                         atom2sets.put(a, answer = new LinkedHashSet<AlloySet>());
-                    answer.add(new AlloySet(r.getName(), r.isPrivate, r.isMeta, newObj.get(0)));
+                    answer.add(new AlloySet(r.getName(), r.isPrivate, r.isMeta, r.isInt, newObj.get(0)));
+                    // Store quantities associated with the atom at hand
+                    if (r.isInt) {
+                        Map<String, String> sigQt = qtsig.get(a);
+                        if(sigQt == null){
+                            sigQt = new HashMap<>();
+                            qtsig.put(a, sigQt);
+                        }
+                        sigQt.put(r.getName(), oldRelQts.get(r).get(oldTuple));
+                    }
                 }
             }
         }
@@ -71,6 +87,6 @@ public class QuantitativeProjector extends StaticProjector{
         // (that is, atoms that belong to types that no longer exist, etc).
         // That's because AlloyInstance's constructor must do the check too, so
         // there's no point in doing that twice.
-        return new AlloyQuantitativeInstance(oldInstance.originalA4, oldInstance.filename, oldInstance.commandname, newModel, atom2sets, rel2tuples, oldInstance.isMetamodel, weight, qtsig);
+        return new AlloyQuantitativeInstance(oldInstance.originalA4, oldInstance.filename, oldInstance.commandname, newModel, atom2sets, rel2tuples, oldInstance.isMetamodel, qtrel, qtsig);
     }
 }

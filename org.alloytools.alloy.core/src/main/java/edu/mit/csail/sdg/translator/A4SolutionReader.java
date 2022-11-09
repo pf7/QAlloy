@@ -22,13 +22,7 @@ import static edu.mit.csail.sdg.ast.Sig.STRING;
 import static edu.mit.csail.sdg.ast.Sig.UNIV;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 import edu.mit.csail.sdg.alloy4.Err;
 import edu.mit.csail.sdg.alloy4.ErrorFatal;
@@ -174,6 +168,7 @@ public class A4SolutionReader {
         Attr isSome = yes(node, "some") ? Attr.SOME : null;
         Attr isPrivate = yes(node, "private") ? Attr.PRIVATE : null;
         Attr isMeta = yes(node, "meta") ? Attr.META : null;
+        Attr isInt = yes(node, "int") ? Attr.INT : null;
         Attr isEnum = yes(node, "enum") ? Attr.ENUM : null;
         Attr isExact = yes(node, "exact") ? Attr.EXACT : null;
         if (yes(node, "builtin")) {
@@ -234,7 +229,7 @@ public class A4SolutionReader {
                     break;
                 }
             if (ans == null) {
-                ans = new SubsetSig(label, parents, isExact, isLone, isOne, isSome, isPrivate, isMeta);
+                ans = new SubsetSig(label, parents, isExact, isLone, isOne, isSome, isPrivate, isMeta, isInt);
                 allsigs.add(ans);
             }
         }

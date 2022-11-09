@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -211,7 +212,7 @@ public final class StaticGraphMaker {
             String x = view.label.get(set);
             // Quantitative Subset Sig
             if(instance instanceof AlloyQuantitativeInstance && ((AlloyQuantitativeInstance) instance).isQuantitative(atom, x)){
-                x = x + " : " + formatNumber(((AlloyQuantitativeInstance) instance).getWeight(atom, x));
+                x = x + ": " + formatNumber(((AlloyQuantitativeInstance) instance).getQuantity(atom, x));
                 x = x.replace("this/", "");
             }
             if (x.length() == 0)
@@ -316,12 +317,11 @@ public final class StaticGraphMaker {
                 label = label + (" [" + moreLabel + "]");
             }
         }
-        //Display tuple weight
+        //Display tuple quantity
         if(instance instanceof AlloyQuantitativeInstance && ((AlloyQuantitativeInstance) instance).isQuantitative(rel)) {
-            String weight = ((AlloyQuantitativeInstance) instance).getWeight(rel, tuple);
-            weight = formatNumber(weight);
-            //handle both probabilities and integers
-            label = "(" + label + "," + weight + ")";
+            String quantity = ((AlloyQuantitativeInstance) instance).getQuantity(rel, tuple);
+            quantity = formatNumber(quantity);
+            label = label + ": " + quantity;
         }
 
         DotDirection dir = bidirectional ? DotDirection.BOTH : (layoutBack ? DotDirection.BACK : DotDirection.FORWARD);
@@ -369,9 +369,9 @@ public final class StaticGraphMaker {
                 // have the same quantity to be considered bidirectional.
                 if (reverse != null && tuples.contains(reverse) && !reverse.equals(tuple) &&
                         (!isQuantitative ||
-                                ((AlloyQuantitativeInstance) instance).getWeight(rel, tuple).equals(
-                                ((AlloyQuantitativeInstance) instance).getWeight(rel, reverse)
-                        ))) {
+                                        ((AlloyQuantitativeInstance) instance).getQuantity(rel, tuple).equals(
+                                        ((AlloyQuantitativeInstance) instance).getQuantity(rel, reverse)
+                                ))) {
                     ignore.add(reverse);
                     if (createEdge(hidePrivate, hideMeta, rel, tuple, true, magicColor))
                         count = count + 2;
@@ -403,6 +403,12 @@ public final class StaticGraphMaker {
         // then the A node would have a line that says "F: B (SET1, SET2)->C,
         // D->E"
         //
+        // Quantitative extension: Check if the current instance is quantitative
+        boolean isQuantitative = instance instanceof AlloyQuantitativeInstance && ((AlloyQuantitativeInstance) instance).isQuantitative(rel);
+        // Attributes of quantitative tuples are of the form: q ** Type
+        BiFunction<AlloyTuple, String , String> addQuantity =
+                (tuple, attr) -> !isQuantitative ? attr : ((AlloyQuantitativeInstance) instance).getQuantity(rel, tuple) + " ** " + attr;
+        //
         Map<GraphNode,String> map = new LinkedHashMap<GraphNode,String>();
         for (AlloyTuple tuple : instance.relation2tuples(rel)) {
             GraphNode start = atom2node.get(tuple.getStart());
@@ -420,9 +426,11 @@ public final class StaticGraphMaker {
                 continue;
             String oldattr = map.get(start);
             if (oldattr != null && oldattr.length() > 0)
-                attr = oldattr + ", " + attr;
+                // Quantitative extension: add quantities to the remaining attributes
+                attr = oldattr + ", " + addQuantity.apply(tuple, attr);
             if (attr.length() > 0)
-                map.put(start, attr);
+                // Quantitative extension: add quantity to the first attribute
+                map.put(start, oldattr != null ? attr : addQuantity.apply(tuple, attr));
         }
         for (Map.Entry<GraphNode,String> e : map.entrySet()) {
             GraphNode node = e.getKey();

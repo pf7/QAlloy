@@ -4,27 +4,27 @@ import kodkod.instance.Tuple;
 
 /**
  * Quantitative extension of {@link A4Tuple}.
- * Associated with this tuple is it's weight.
+ * Associated with this tuple is its quantity.
  */
 public class A4QtTuple extends A4Tuple {
 
-    private final String weight;
+    private final String quantity;
 
-    A4QtTuple(Tuple tuple, A4Solution sol, Number weight){
+    A4QtTuple(Tuple tuple, A4Solution sol, Number quantity){
         super(tuple, sol);
-        this.weight = weight.toString();
+        this.quantity = quantity.toString();
     }
 
-    A4QtTuple(Tuple tuple, A4Solution sol, String weight){
+    A4QtTuple(Tuple tuple, A4Solution sol, String quantity){
         super(tuple, sol);
-        this.weight = weight;
+        this.quantity = quantity;
     }
 
     /**
      * returns the weight associated with this tuple.
      */
-    public String getWeight(){
-        return weight;
+    public String getQuantity(){
+        return quantity;
     }
 
     /**
@@ -33,10 +33,7 @@ public class A4QtTuple extends A4Tuple {
     @Override
     public String toString(){
         StringBuilder sb = new StringBuilder();
-        //Int representation (1, w) = w TODO: Not needed anymore
-        if(this.atom(0).equals("1"))
-            sb.append(weight);
-        else sb.append(super.toString()).append(" * ").append(weight);
+        sb.append(quantity).append(" ** ").append(super.toString());
         return sb.toString();
     }
 }

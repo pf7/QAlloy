@@ -1766,8 +1766,8 @@ public class NumericMatrix implements Iterable<IndexedEntry<NumericValue>>, Clon
     /**
      * Overrides the values in this matrix with those in <code>other</code>.
      * Specifically, for each index i of the returned matrix m,
-     * m.elements[i] contains the value of this.elements[i] if the sum of
-     * all elements of other in the same row adds up to 0,
+     * m.elements[i] contains the value of this.elements[i] if the number of
+     * all non-zero elements of other in the same row adds up to 0,
      * and the value of other.elements[i] otherwise.
      *
      * @throws NullPointerException other = null
@@ -1799,7 +1799,7 @@ public class NumericMatrix implements Iterable<IndexedEntry<NumericValue>>, Clon
                 Iterator<IndexedEntry<NumericValue>> it = other.cells.iterator(row * rowLength, (row + 1) * rowLength - 1);
 
                 while(it.hasNext())
-                    rowValues.add(it.next().value());
+                    rowValues.add(factory.dropNum(it.next().value()));
 
                 //rowVal = sum other row values
                 rowVal = rowValues.size() == 0 ? ZERO :
@@ -1812,7 +1812,7 @@ public class NumericMatrix implements Iterable<IndexedEntry<NumericValue>>, Clon
                 ret.fastSet(e0.index(), e0.value());
             else ret.fastSet(e0.index(),
                     isB1 && isB2 ?
-                            factory.toBinary(factory.or(ret.fastGet(e0.index()), factory.and(e0.value(), rowVal.negation()))) :
+                            factory.toBinary(factory.or(ret.fastGet(e0.index()), factory.and(e0.value(), factory.eq(rowVal, ZERO)))) :
                             factory.ite(factory.eq(rowVal, ZERO), e0.value(), ret.fastGet(e0.index()))
                     );
 

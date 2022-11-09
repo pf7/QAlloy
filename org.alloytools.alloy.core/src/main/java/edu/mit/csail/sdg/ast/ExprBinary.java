@@ -317,25 +317,13 @@ public final class ExprBinary extends Expr {
                 case NOT_GT :
                 case NOT_LTE :
                 case NOT_GTE : {
-                    //todo: distinguish between quantitative/qualitative context
-                    left = left.typecheck_as_set(); //left.type.is_int() ? left.typecheck_as_int() : left.typecheck_as_set();
-                    right = right.typecheck_as_set();//right.type.is_int() ? right.typecheck_as_int() : right.typecheck_as_set();
+                    left = left.typecheck_as_set();
+                    right = right.typecheck_as_set();
                     break;
                 }
-                /*case MUL :
-                case DIV :
-                case REM :
-                case LT :
-                case LTE :
-                case GT :
-                case GTE :*/
                 case SHL :
                 case SHR :
-                case SHA :
-                /*case NOT_LT :
-                case NOT_GT :
-                case NOT_LTE :
-                case NOT_GTE :*/ {
+                case SHA : {
                     left = left.typecheck_as_int();
                     right = right.typecheck_as_int();
                     break;
@@ -346,12 +334,6 @@ public final class ExprBinary extends Expr {
                     right = right.typecheck_as_formula();
                     break;
                 }
-                /*case IPLUS : TODO
-                case IMINUS : {
-                    left = left.typecheck_as_int();
-                    right = right.typecheck_as_int();
-                    break;
-                }*/
                 case PLUS :
                 case MINUS :
                 case EQUALS :
@@ -389,35 +371,19 @@ public final class ExprBinary extends Expr {
             JoinableList<Err> errs = left.errors.make(right.errors);
             if (errs.isEmpty())
                 switch (this) {
-                    case LT :
-                    case LTE :
-                    case GT :
-                    case GTE :
-                    case NOT_LT :
-                    case NOT_LTE :
-                    case NOT_GT :
-                    case NOT_GTE :
-                        if(!left.type.hasCommonArity(right.type)) {
-                            e = error(pos, this + " can be used only between 2 expressions of the same arity, or between 2 integer expressions.", left, right);
-                            break;
-                        }
                     case AND :
                     case OR :
                     case IFF :
                     case IMPLIES :
                         type = Type.FORMULA;
                         break;
+                    // Quantitative extension
                     case IPLUS:
                     case IMINUS:
                     case MUL :
                     case DIV :
                     case REM :
-                        // todo: distinguish between quantitative/qualitative context
-                        /*if(left.type.is_int() && !right.type.is_int())
-                            type = right.type;
-                        else if (!left.type.is_int() && right.type.is_int())
-                            type = left.type;
-                        else*/ type = left.type.intersect(right.type);
+                        type = left.type.intersect(right.type);
 
                         if(type.hasNoTuple()){
                             e = error(pos, this + " cannot be applied over two expressions of disjoint types.", left, right);
@@ -453,10 +419,15 @@ public final class ExprBinary extends Expr {
                         }
                         e = error(pos, this + " can be used only between 2 expressions of the same arity, or between 2 integer expressions.", left, right);
                         break;
-                    /*case IPLUS : TODO
-                    case IMINUS :
-                        type = Type.smallIntType();
-                        break;*/
+                    // Quantitative extension
+                    case LT :
+                    case LTE :
+                    case GT :
+                    case GTE :
+                    case NOT_LT :
+                    case NOT_LTE :
+                    case NOT_GT :
+                    case NOT_GTE :
                     case IN :
                     case NOT_IN :
                         type = (left.type.hasCommonArity(right.type)) ? Type.FORMULA : EMPTY;
@@ -521,20 +492,9 @@ public final class ExprBinary extends Expr {
         ErrorWarning w = null;
         Type a = left.type, b = right.type;
         switch (op) {
-            /*case MUL :
-            case DIV :
-            case REM :
-            case LT :
-            case LTE :
-            case GT :
-            case GTE :*/
             case SHL :
             case SHR :
-            case SHA :
-            /*case NOT_LTE :
-            case NOT_GTE :
-            case NOT_LT :
-            case NOT_GT :*/ {
+            case SHA : {
                 a = (b = Type.smallIntType());
                 break;
             }
@@ -544,16 +504,7 @@ public final class ExprBinary extends Expr {
             case DIV :
             case REM:
             case IPLUS:
-            case IMINUS:
-            case LT :
-            case LTE :
-            case GT :
-            case GTE :
-            case NOT_LTE :
-            case NOT_GTE :
-            case NOT_LT :
-            case NOT_GT : {
-                // todo: distinguish between quantitative/qualitative context
+            case IMINUS: {
                 if(a.is_int() && b.is_int()){
                     a = (b = Type.smallIntType());
                 }else if(!a.is_int() && !b.is_int()){
@@ -612,22 +563,32 @@ public final class ExprBinary extends Expr {
                 }
                 break;
             }
+            // Quantitative extension
+            case LT :
+            case LTE :
+            case GT :
+            case GTE :
+            case NOT_LTE :
+            case NOT_GTE :
+            case NOT_LT :
+            case NOT_GT :
             case IN :
             case NOT_IN : {
+                final String comp = op == Op.IN || op == Op.NOT_IN ? "Subset" : "Comparison";
                 a = a.pickCommonArity(b);
                 b = b.intersect(a);
                 if (warns == null)
                     break;
                 if (left.type.hasNoTuple() && right.type.hasNoTuple())
-                    w = warn("Subset operator is redundant, because both subexpressions are always empty.");
+                    w = warn(comp + " operator is redundant, because both subexpressions are always empty.");
                 else if (left.type.hasNoTuple())
-                    w = warn("Subset operator is redundant, because the left subexpression is always empty.");
+                    w = warn(comp + " operator is redundant, because the left subexpression is always empty.");
                 else if (right.type.hasNoTuple())
-                    w = warn("Subset operator is redundant, because the right subexpression is always empty.");
+                    w = warn(comp + " operator is redundant, because the right subexpression is always empty.");
                 else if (b.hasNoTuple())
-                    w = warn("Subset operator is redundant, because the left and right subexpressions are always disjoint.");
+                    w = warn(comp + " operator is redundant, because the left and right subexpressions are always disjoint.");
                 else if (left.isSame(right))
-                    w = warn("Subset operator is redundant, because the left and right expressions always have the same value.");
+                    w = warn(comp + " operator is redundant, because the left and right expressions always have the same value.");
                 break;
             }
             case INTERSECT : {
@@ -637,12 +598,6 @@ public final class ExprBinary extends Expr {
                     w = warn("& is irrelevant because the two subexpressions are always disjoint.");
                 break;
             }
-            /*case IPLUS : TODO
-            case IMINUS : {
-                a = Type.smallIntType();
-                b = Type.smallIntType();
-                break;
-            }*/
             case PLUSPLUS :
             case PLUS : {
                 a = a.intersect(p);

@@ -98,13 +98,13 @@ public class StaticProjector {
             // If the relation still contains at least two types, it becomes a
             // new relation
             if (relTypes.size() > 1) {
-                relations.add(new AlloyRelation(rel.getName(), rel.isPrivate, rel.isMeta, relTypes));
+                relations.add(new AlloyRelation(rel.getName(), rel.isPrivate, rel.isMeta, rel.isInt, relTypes));
                 if (data != null)
                     data.put(rel, indices);
             }
             // If it contains only one type, it becomes a new set.
             else if (relTypes.size() == 1) {
-                sets.add(new AlloySet(rel.getName(), rel.isPrivate, rel.isMeta, relTypes.get(0)));
+                sets.add(new AlloySet(rel.getName(), rel.isPrivate, rel.isMeta, rel.isInt, relTypes.get(0)));
                 if (data != null)
                     data.put(rel, indices);
             }
@@ -168,7 +168,7 @@ public class StaticProjector {
                 List<AlloyAtom> newTuple = oldTuple.project(list);
                 List<AlloyType> newObj = r.project(list);
                 if (newObj.size() > 1 && newTuple.size() > 1) {
-                    AlloyRelation r2 = new AlloyRelation(r.getName(), r.isPrivate, r.isMeta, newObj);
+                    AlloyRelation r2 = new AlloyRelation(r.getName(), r.isPrivate, r.isMeta, r.isInt, newObj);
                     Set<AlloyTuple> answer = rel2tuples.get(r2);
                     if (answer == null)
                         rel2tuples.put(r2, answer = new LinkedHashSet<AlloyTuple>());
@@ -178,7 +178,7 @@ public class StaticProjector {
                     Set<AlloySet> answer = atom2sets.get(a);
                     if (answer == null)
                         atom2sets.put(a, answer = new LinkedHashSet<AlloySet>());
-                    answer.add(new AlloySet(r.getName(), r.isPrivate, r.isMeta, newObj.get(0)));
+                    answer.add(new AlloySet(r.getName(), r.isPrivate, r.isMeta, r.isInt, newObj.get(0)));
                 }
             }
         }

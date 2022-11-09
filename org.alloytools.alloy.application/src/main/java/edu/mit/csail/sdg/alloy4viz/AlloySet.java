@@ -40,12 +40,19 @@ public final class AlloySet extends AlloyNodeElement {
      */
     public final boolean    isMeta;
 
+    /**
+     * Records whether this relation is known to be "int"; NOTE: this value is NOT
+     * USED during equals() comparison.
+     */
+    public final boolean    isInt;
+
     /** Constructs a new AlloySet object. */
-    public AlloySet(String name, boolean isPrivate, boolean isMeta, AlloyType type) {
+    public AlloySet(String name, boolean isPrivate, boolean isMeta, boolean isInt, AlloyType type) {
         super(name);
         this.type = type;
         this.isPrivate = isPrivate;
         this.isMeta = isMeta;
+        this.isInt = isInt;
     }
 
     /** Returns the parent type of the AlloySet. */

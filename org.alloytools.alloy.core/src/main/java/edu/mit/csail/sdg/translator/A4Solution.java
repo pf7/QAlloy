@@ -1517,7 +1517,7 @@ public final class A4Solution {
         }*/ // Without this, kodkod refuses to grow unmentioned relations
         Formula fgoal = Formula.and(formulas);
 
-        Integer maxWeight = cmd.bitwidth < 0 ? null : cmd.bitwidth;
+        Integer maxWeight = null; // cmd.bitwidth < 0 ? null : cmd.bitwidth; TODO
         QuantitativeOptions solverOptions = new QuantitativeOptions(
                 opt.quantitativeSolver,
                 solverBinary,

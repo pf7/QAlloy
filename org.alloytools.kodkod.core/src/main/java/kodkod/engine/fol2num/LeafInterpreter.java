@@ -204,7 +204,7 @@ public final class LeafInterpreter {
         }
         else if(isConstant){
                 // Numeric Matrix
-                if(uppers.get(r) instanceof QtTupleSet){
+                if(r.isQuantitative() && uppers.get(r) instanceof QtTupleSet){
                     final QtTupleSet qtSet = (QtTupleSet) uppers.get(r);
                     for (IntIterator indeces = upperBound.iterator(); indeces.hasNext(); ) {
                         int tupleIndex = indeces.next();

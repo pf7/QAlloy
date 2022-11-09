@@ -253,10 +253,10 @@ public class TableView {
             SimAtom atom = SimAtom.make(a4t.atom(i));
             atoms.add(atom);
         }
-        //Add tuple weight to the table if it exists
+        //Add tuple quantity to the table if it exists
         if(a4t instanceof A4QtTuple){
-            String weight = ((A4QtTuple)a4t).getWeight();
-            atoms.add(SimAtom.make(weight));
+            String quantity = ((A4QtTuple)a4t).getQuantity();
+            atoms.add(SimAtom.make(quantity));
         }
         return SimTuple.make(atoms);
     }

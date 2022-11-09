@@ -121,7 +121,7 @@ public final class A4SolutionWriter {
                 for (int i = 0; i < t.arity(); i++)
                     Util.encodeXMLs(out, " <atom label=\"", t.atom(i), "\"/>");
                 // Quantitative extension: Write the quantity associated with the tuple, if applicable.
-                if(t instanceof A4QtTuple) Util.encodeXMLs(out, "<weight value=\"" + ((A4QtTuple)t).getWeight() + "\"/>\n");
+                if(t instanceof A4QtTuple) Util.encodeXMLs(out, "<weight value=\"" + ((A4QtTuple)t).getQuantity() + "\"/>\n");
                 out.print(" </tuple>\n");
             }
         }
@@ -171,6 +171,8 @@ public final class A4SolutionWriter {
             out.print("\" private=\"yes");
         if (x.isMeta != null)
             out.print("\" meta=\"yes");
+        if (x.isInt != null)
+            out.print("\" int=\"yes");
         if (x instanceof SubsetSig && ((SubsetSig) x).exact)
             out.print("\" exact=\"yes");
         if (x.isEnum != null)
@@ -182,7 +184,7 @@ public final class A4SolutionWriter {
                 for (A4Tuple t : ts.minus(ts2))
                     // Quantitative extension: Write the quantity associated with the tuple, if applicable.
                     if (t instanceof A4QtTuple)
-                        Util.encodeXMLs(out, "   <atom label=\"", t.atom(0), "\" value=\"",  ((A4QtTuple) t).getWeight(), "\"/>\n");
+                        Util.encodeXMLs(out, "   <atom label=\"", t.atom(0), "\" value=\"",  ((A4QtTuple) t).getQuantity(), "\"/>\n");
                     else Util.encodeXMLs(out, "   <atom label=\"", t.atom(0), "\"/>\n");
 
             }
@@ -214,6 +216,8 @@ public final class A4SolutionWriter {
                 out.print("\" private=\"yes");
             if (x.isMeta != null)
                 out.print("\" meta=\"yes");
+            if (x.isInt != null)
+                out.print("\" int=\"yes");
             out.print("\">\n");
             writeExpr("", x);
             out.print("</field>\n");

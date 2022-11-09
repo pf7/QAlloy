@@ -62,9 +62,7 @@ public class QTEvaluator extends Evaluator {
 
         TupleFactory f = super.instance().universe().factory();
         // Check if the relation is represented by a Boolean Matrix
-        boolean isBoolean = weight.values().stream().allMatch(n -> n.doubleValue() == 1.0);
-
-        return isBoolean ? f.setOf(arity, m.denseIndices()) : f.setOf(arity, m.denseIndices(), weight);
+        return m.isBoolean() ? f.setOf(arity, m.denseIndices()) : f.setOf(arity, m.denseIndices(), weight);
     }
 
     /**

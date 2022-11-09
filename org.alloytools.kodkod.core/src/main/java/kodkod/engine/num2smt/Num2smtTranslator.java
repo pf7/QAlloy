@@ -662,8 +662,10 @@ public class Num2smtTranslator implements BooleanVisitor<Integer,Object>, Numeri
     @Override
     public Integer visit(NumericConstant constant, Object arg) {
         int l = constant.label();
-        if(visited.add(l) && !intFS.containsKey(l))
-            intFS.put(l, Integer.toString(constant.getValue().intValue()));
+        if(visited.add(l) && !intFS.containsKey(l)) {
+            int c = constant.getValue().intValue();
+            intFS.put(l, c >= 0 ? Integer.toString(c) : "(- " + -c +")");
+        }
         return l;
     }
 }
